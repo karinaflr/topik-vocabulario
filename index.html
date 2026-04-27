@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TOPIK I — Vocabulario</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0d0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TOPIK I">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -105,6 +111,34 @@
   .cat-otro { background: rgba(150,150,160,0.15); color: #969696; }
   .empty-state { text-align: center; color: var(--muted); padding: 3rem; font-size: 0.9rem; grid-column: 1/-1; }
 
+  /* LEARNED */
+  .learned-badge { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.6rem; border-radius: 20px; background: rgba(232,193,74,0.15); color: var(--accent); font-size: 0.72rem; font-weight: 500; }
+  .progress-pip-row { display: flex; gap: 3px; margin-top: 0.3rem; }
+  .pip { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+  .pip.filled { background: var(--accent); }
+  #learned-mode { width: 100%; max-width: 900px; padding: 1rem 1.5rem 3rem; display: none; }
+  .learned-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .learned-title { font-size: 1rem; font-weight: 500; color: var(--text); }
+  .learned-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.7rem; }
+  .learned-card { background: var(--card-bg); border: 1px solid rgba(232,193,74,0.3); border-radius: 10px; padding: 1rem; display: flex; flex-direction: column; gap: 0.3rem; }
+  .learned-card .korean { font-family: 'Noto Sans KR', sans-serif; font-size: 1.3rem; font-weight: 700; }
+  .learned-card .eng-es { font-size: 0.85rem; color: var(--text); }
+  .learned-card .eng-en { font-size: 0.72rem; color: var(--muted); }
+  .btn-unlearn { margin-top: 0.5rem; padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 0.7rem; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+  .btn-unlearn:hover { border-color: var(--wrong); color: var(--wrong); }
+  .include-learned-row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.8rem; color: var(--muted); }
+  .toggle { width: 36px; height: 20px; border-radius: 10px; background: var(--border); border: none; cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0; }
+  .toggle.on { background: var(--accent2); }
+  .toggle::after { content:''; position: absolute; width: 14px; height: 14px; border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: left 0.2s; }
+  .toggle.on::after { left: 19px; }
+
+  @keyframes fadeout { 0%{opacity:1;transform:translate(-50%,-50%) scale(1)} 70%{opacity:1;transform:translate(-50%,-60%) scale(1.05)} 100%{opacity:0;transform:translate(-50%,-70%) scale(0.95)} }
+
+  @media (max-width: 480px) {
+    #learned-mode { padding: 0.75rem 1rem 3rem; }
+    .learned-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.5rem; }
+  }
+
   /* ── MOBILE ── */
   @media (max-width: 480px) {
     header { padding: 1rem 1rem 0.6rem; gap: 0.75rem; }
@@ -170,12 +204,14 @@
       <button class="mode-btn active" onclick="setMode('flashcard',this)">Flashcards</button>
       <button class="mode-btn" onclick="setMode('grid',this)">Lista</button>
       <button class="mode-btn" onclick="setMode('quiz',this)">Quiz</button>
+      <button class="mode-btn" onclick="setMode('learned',this)">⭐ <span id="learned-btn-count">0</span></button>
     </div>
   </div>
 </header>
 
 <div class="stats-bar">
   <div class="stat">Mostrando <span id="count-display">1053</span> palabras</div>
+  <div class="stat">⭐ <span id="learned-count" style="color:var(--accent);font-weight:500;">0</span> aprendidas</div>
   <div class="stat" id="quiz-stats-bar" style="display:none">✓ <span id="q-correct" style="color:var(--correct)">0</span> &nbsp;✗ <span id="q-wrong" style="color:var(--wrong)">0</span></div>
 </div>
 
@@ -214,8 +250,20 @@
   </div>
   <div class="quiz-instruction">¿Qué significa esta palabra?</div>
   <div class="quiz-question" id="quiz-q">가게</div>
+  <div class="progress-pip-row" id="quiz-streak" style="justify-content:center;margin-top:-0.8rem;"></div>
   <div class="quiz-options" id="quiz-opts"></div>
 
+</div>
+
+<div id="learned-mode">
+  <div class="learned-header">
+    <span class="learned-title">Palabras aprendidas</span>
+    <div class="include-learned-row">
+      <button class="toggle" id="include-toggle" onclick="toggleIncludeLearned()"></button>
+      <span>Incluir en quiz</span>
+    </div>
+  </div>
+  <div class="learned-grid" id="learned-grid"></div>
 </div>
 
 <script>
@@ -1284,6 +1332,69 @@ let currentMode = 'flashcard';
 let searchTerm = '';
 let quizCorrect = 0, quizWrong = 0, quizAnswered = false;
 let quizWords = [], quizCurrent = 0;
+let includeLearned = false;
+
+// ── LEARNED SYSTEM ──
+const LEARNED_KEY = 'topik1_progress';
+const NEEDED = 10;
+
+function loadProgress(){
+  try { return JSON.parse(localStorage.getItem(LEARNED_KEY)) || {}; }
+  catch(e){ return {}; }
+}
+function saveProgress(p){ localStorage.setItem(LEARNED_KEY, JSON.stringify(p)); }
+
+let progress = loadProgress(); // {wordId: consecutiveCorrect}
+
+function isLearned(id){ return (progress[id]||0) >= NEEDED; }
+function getStreak(id){ return progress[id]||0; }
+
+function markCorrect(id){
+  progress[id] = (progress[id]||0) + 1;
+  saveProgress(progress);
+  updateLearnedCounters();
+}
+function markWrong(id){
+  progress[id] = 0;
+  saveProgress(progress);
+  updateLearnedCounters();
+}
+function unlearn(id){
+  progress[id] = 0;
+  saveProgress(progress);
+  updateLearnedCounters();
+  renderLearnedGrid();
+  applyFilters();
+}
+function toggleIncludeLearned(){
+  includeLearned = !includeLearned;
+  const t = document.getElementById('include-toggle');
+  t.classList.toggle('on', includeLearned);
+  applyFilters();
+}
+
+function updateLearnedCounters(){
+  const n = allWords.filter(w=>isLearned(w.id)).length;
+  document.getElementById('learned-count').textContent = n;
+  document.getElementById('learned-btn-count').textContent = n;
+}
+
+function renderLearnedGrid(){
+  const grid = document.getElementById('learned-grid');
+  const learned = allWords.filter(w=>isLearned(w.id));
+  if(!learned.length){
+    grid.innerHTML='<div class="empty-state">Todavía no hay palabras aprendidas.<br>Responde una palabra correctamente 10 veces en el quiz.</div>';
+    return;
+  }
+  grid.innerHTML = learned.map(w=>`
+    <div class="learned-card">
+      <div class="korean">${w.korean}</div>
+      <div class="eng-es">${w.es}</div>
+      <div class="eng-en">(${w.en})</div>
+      <div class="cat ${catClass(w.cat)}">${w.cat}</div>
+      <button class="btn-unlearn" onclick="unlearn(${w.id})">↩ Volver a practicar</button>
+    </div>`).join('');
+}
 
 function catClass(c){return 'cat-'+(c||'otro');}
 
@@ -1320,7 +1431,8 @@ function updateCard(){
 }
 
 function flipCard(){document.getElementById('card-inner').classList.toggle('flipped');}
-function nextCard(){if(currentIdx<deck.length-1){currentIdx++;updateCard();}}
+function nextCard(){if(currentIdx<deck.length-1){currentIdx++;updateCard();
+updateLearnedCounters();}}
 function prevCard(){if(currentIdx>0){currentIdx--;updateCard();}}
 function shuffleDeck(){
   for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
@@ -1346,10 +1458,17 @@ function startQuiz(){
 }
 
 function renderQuizQuestion(){
-  if(!quizWords.length)return;
+  if(!quizWords.length){
+    document.getElementById('quiz-q').textContent='—';
+    document.getElementById('quiz-opts').innerHTML='<div class="empty-state" style="grid-column:1/-1">No hay palabras para practicar.<br>Activa "Incluir aprendidas" o cambia el filtro.</div>';
+    return;
+  }
   const w=quizWords[quizCurrent%quizWords.length];
   document.getElementById('quiz-q').textContent=w.korean;
   quizAnswered=false;
+  // Show current streak pips
+  const s=Math.min(getStreak(w.id),NEEDED);
+  document.getElementById('quiz-streak').innerHTML=Array.from({length:NEEDED},(_,i)=>`<div class="pip${i<s?' filled':''}"></div>`).join('');
   const pool=allWords.filter(x=>x.id!==w.id).sort(()=>Math.random()-0.5).slice(0,3);
   const opts=[...pool,w].sort(()=>Math.random()-0.5);
   document.getElementById('quiz-opts').innerHTML=opts.map(o=>`
@@ -1367,8 +1486,28 @@ function checkAnswer(btn,selectedId,correctId){
   document.querySelectorAll('.quiz-opt').forEach(b=>{
     if(b.querySelector('.opt-es').textContent===correctWord.es) b.classList.add('correct');
   });
-  if(selectedId===correctId){quizCorrect++;}
-  else{btn.classList.add('wrong');quizWrong++;}
+  if(selectedId===correctId){
+    quizCorrect++;
+    markCorrect(correctId);
+    // Show "aprendida" flash if just reached 10
+    if(getStreak(correctId)>=NEEDED){
+      const flash=document.createElement('div');
+      flash.textContent='⭐ ¡Aprendida!';
+      flash.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--accent);color:#000;padding:0.6rem 1.4rem;border-radius:12px;font-weight:700;font-size:1.1rem;z-index:999;pointer-events:none;animation:fadeout 0.9s forwards;';
+      document.body.appendChild(flash);
+      setTimeout(()=>flash.remove(),900);
+    }
+  } else {
+    btn.classList.add('wrong');
+    quizWrong++;
+    markWrong(correctId);
+  }
+  // Show streak pips on correct answer
+  const streakEl=document.getElementById('quiz-streak');
+  if(streakEl){
+    const s=Math.min(getStreak(correctId),NEEDED);
+    streakEl.innerHTML=Array.from({length:NEEDED},(_,i)=>`<div class="pip${i<s?' filled':''}"></div>`).join('');
+  }
   updateQuizCounters();
   setTimeout(()=>nextQuiz(), 900);
 }
@@ -1390,7 +1529,8 @@ function getFiltered(){
   return allWords.filter(w=>{
     const mc=currentCat==='todas'||w.cat===currentCat;
     const ms=!searchTerm||w.korean.includes(searchTerm)||w.es.toLowerCase().includes(searchTerm.toLowerCase())||w.en.toLowerCase().includes(searchTerm.toLowerCase());
-    return mc&&ms;
+    const ml=includeLearned||!isLearned(w.id);
+    return mc&&ms&&ml;
   });
 }
 
@@ -1419,10 +1559,12 @@ function setMode(mode,el){
   document.getElementById('flashcard-mode').style.display=mode==='flashcard'?'flex':'none';
   document.getElementById('grid-mode').style.display=mode==='grid'?'block':'none';
   document.getElementById('quiz-mode').style.display=mode==='quiz'?'flex':'none';
+  document.getElementById('learned-mode').style.display=mode==='learned'?'block':'none';
   document.getElementById('quiz-stats-bar').style.display=mode==='quiz'?'block':'none';
   if(mode==='grid')renderGrid();
   if(mode==='quiz')startQuiz();
   if(mode==='flashcard')updateCard();
+  if(mode==='learned')renderLearnedGrid();
 }
 
 document.addEventListener('keydown',e=>{
@@ -1434,6 +1576,15 @@ document.addEventListener('keydown',e=>{
 });
 
 updateCard();
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(r => console.log('SW registrado:', r.scope))
+      .catch(e => console.log('SW error:', e));
+  });
+}
 </script>
 </body>
 </html>
