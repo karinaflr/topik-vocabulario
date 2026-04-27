@@ -132,6 +132,47 @@
   .toggle::after { content:''; position: absolute; width: 14px; height: 14px; border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: left 0.2s; }
   .toggle.on::after { left: 19px; }
 
+  /* MAIN TABS */
+  .main-tabs { display: flex; gap: 0; margin-left: auto; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .main-tab { padding: 0.35rem 1.1rem; background: transparent; border: none; color: var(--muted); font-size: 0.82rem; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s; }
+  .main-tab.active { background: var(--accent); color: #000; font-weight: 500; }
+  .main-tab:hover:not(.active) { color: var(--text); }
+
+  /* GRAMMAR */
+  #grammar-section { width: 100%; max-width: 680px; padding: 1rem 1.5rem 3rem; display: none; flex-direction: column; gap: 1.2rem; }
+  .grammar-controls { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+  .exercise-type-btn { padding: 0.3rem 0.8rem; border-radius: 20px; border: 1px solid var(--border); background: var(--tag-bg); color: var(--muted); font-size: 0.78rem; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; flex-shrink: 0; }
+  .exercise-type-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .exercise-type-btn.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 500; }
+  .exercise-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+  .exercise-type-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent2); }
+  .exercise-prompt { font-size: 1rem; line-height: 1.7; color: var(--text); font-family: 'Noto Sans KR', sans-serif; }
+  .exercise-prompt .blank { display: inline-block; min-width: 80px; border-bottom: 2px solid var(--accent); text-align: center; color: var(--accent); font-weight: 700; }
+  .exercise-options { display: flex; flex-direction: column; gap: 0.5rem; }
+  .ex-opt { background: var(--tag-bg); border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem 1rem; text-align: left; color: var(--text); font-size: 0.9rem; font-family: 'Noto Sans KR', sans-serif; cursor: pointer; transition: all 0.18s; }
+  .ex-opt:hover:not(:disabled) { border-color: var(--accent2); color: var(--accent2); }
+  .ex-opt.correct { border-color: var(--correct); background: rgba(76,175,125,0.12); color: var(--correct); }
+  .ex-opt.wrong { border-color: var(--wrong); background: rgba(224,85,85,0.1); color: var(--wrong); }
+  .ex-opt:disabled { cursor: default; }
+  .exercise-explanation { font-size: 0.82rem; color: var(--muted); line-height: 1.6; border-top: 1px solid var(--border); padding-top: 0.8rem; display: none; }
+  .exercise-explanation.visible { display: block; }
+  .exercise-explanation strong { color: var(--text); }
+  .grammar-btn-row { display: flex; gap: 0.8rem; }
+  .btn-new-exercise { flex: 1; padding: 0.75rem; border-radius: 10px; border: none; background: var(--accent); color: #000; font-family: 'DM Sans', sans-serif; font-weight: 500; font-size: 0.9rem; cursor: pointer; transition: filter 0.18s; }
+  .btn-new-exercise:hover { filter: brightness(1.1); }
+  .loading-exercise { display: flex; align-items: center; gap: 0.7rem; color: var(--muted); font-size: 0.85rem; padding: 1rem 0; }
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .grammar-score { font-size: 0.8rem; color: var(--muted); }
+  .grammar-score span { color: var(--text); font-weight: 500; }
+
+  @media (max-width: 480px) {
+    #grammar-section { padding: 0.75rem 1rem 3rem; }
+    .main-tab { padding: 0.3rem 0.8rem; font-size: 0.78rem; }
+    .exercise-card { padding: 1rem; }
+    .exercise-prompt { font-size: 0.95rem; }
+  }
+
   @keyframes fadeout { 0%{opacity:1;transform:translate(-50%,-50%) scale(1)} 70%{opacity:1;transform:translate(-50%,-60%) scale(1.05)} 100%{opacity:0;transform:translate(-50%,-70%) scale(0.95)} }
 
   @media (max-width: 480px) {
@@ -184,9 +225,12 @@
 <header>
   <div class="title-row">
     <h1>TOPIK I</h1>
-    <span class="subtitle">Vocabulario · 1053 palabras</span>
+    <div class="main-tabs">
+      <button class="main-tab active" onclick="setMainTab('vocab',this)">Vocabulario</button>
+      <button class="main-tab" onclick="setMainTab('grammar',this)">Gramática</button>
+    </div>
   </div>
-  <div class="controls filters">
+  <div class="controls filters" id="vocab-filters">
     <span class="filter-label">Categoría</span>
     <button class="tag active" onclick="setCategory('todas',this)">Todas</button>
     <button class="tag" onclick="setCategory('verbo',this)">Verbos</button>
@@ -196,7 +240,7 @@
     <button class="tag" onclick="setCategory('expresión',this)">Expresiones</button>
     <button class="tag" onclick="setCategory('número',this)">Números</button>
   </div>
-  <div class="controls search-row">
+  <div class="controls search-row" id="vocab-search-row">
     <div class="search-wrap">
       <input type="text" id="search" placeholder="Buscar palabra o traducción..." oninput="handleSearch()">
     </div>
@@ -264,6 +308,28 @@
     </div>
   </div>
   <div class="learned-grid" id="learned-grid"></div>
+</div>
+
+<div id="grammar-section">
+  <div class="grammar-controls">
+    <button class="exercise-type-btn active" onclick="setExType('random',this)">Aleatorio</button>
+    <button class="exercise-type-btn" onclick="setExType('topic',this)">화제 고르기</button>
+    <button class="exercise-type-btn" onclick="setExType('fill',this)">빈칸 채우기</button>
+    <button class="exercise-type-btn" onclick="setExType('dialogue',this)">대화 완성</button>
+    <button class="exercise-type-btn" onclick="setExType('place',this)">장소 찾기</button>
+    <button class="exercise-type-btn" onclick="setExType('match',this)">내용 같은 것</button>
+    <button class="exercise-type-btn" onclick="setExType('insert',this)">문장 넣기</button>
+    <button class="exercise-type-btn" onclick="setExType('passage',this)">지문 읽기</button>
+  </div>
+  <div class="grammar-score">Sesión: <span id="g-correct">0</span> ✓ &nbsp; <span id="g-wrong">0</span> ✗</div>
+  <div class="exercise-card" id="exercise-card">
+    <div style="text-align:center; color:var(--muted); padding:2rem 0;">
+      Presiona <strong style="color:var(--text)">Nuevo ejercicio</strong> para comenzar
+    </div>
+  </div>
+  <div class="grammar-btn-row">
+    <button class="btn-new-exercise" onclick="generateExercise()">✦ Nuevo ejercicio</button>
+  </div>
 </div>
 
 <script>
@@ -1432,7 +1498,13 @@ function updateCard(){
 
 function flipCard(){document.getElementById('card-inner').classList.toggle('flipped');}
 function nextCard(){if(currentIdx<deck.length-1){currentIdx++;updateCard();
-updateLearnedCounters();}}
+updateLearnedCounters();
+loadExerciseBank();
+// pre-warm dynamic pipeline after 2s
+setTimeout(() => {
+  const s=[...allWords].sort(()=>Math.random()-0.5).slice(0,6).map(w=>`${w.korean}(${w.es})`).join(', ');
+  prefetchDynamic('random', s);
+}, 2000);}}
 function prevCard(){if(currentIdx>0){currentIdx--;updateCard();}}
 function shuffleDeck(){
   for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
@@ -1565,6 +1637,277 @@ function setMode(mode,el){
   if(mode==='quiz')startQuiz();
   if(mode==='flashcard')updateCard();
   if(mode==='learned')renderLearnedGrid();
+}
+
+// ── MAIN TABS ──
+let currentMainTab = 'vocab';
+
+function setMainTab(tab, el) {
+  currentMainTab = tab;
+  document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+
+  const vocabEls = ['vocab-filters','vocab-search-row','flashcard-mode','grid-mode','quiz-mode','learned-mode'];
+  const statsBar = document.querySelector('.stats-bar');
+
+  if (tab === 'vocab') {
+    vocabEls.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = '';
+    });
+    if (statsBar) statsBar.style.display = '';
+    document.getElementById('grammar-section').style.display = 'none';
+    // restore current mode visibility
+    setMode(currentMode, document.querySelector('.mode-btn.active'));
+  } else {
+    vocabEls.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    if (statsBar) statsBar.style.display = 'none';
+    document.getElementById('grammar-section').style.display = 'flex';
+  }
+}
+
+// ── GRAMMAR EXERCISES ──
+let exType = 'random';
+let gCorrect = 0, gWrong = 0;
+
+const EX_TYPES = {
+  topic:   '화제 고르기',
+  fill:    '빈칸 채우기',
+  dialogue:'대화 완성',
+  place:   '장소 찾기',
+  match:   '내용 같은 것',
+  insert:  '문장 넣기',
+  passage: '지문 읽기'
+};
+
+function setExType(type, el) {
+  exType = type;
+  document.querySelectorAll('.exercise-type-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function getRandomExType() {
+  const types = Object.keys(EX_TYPES);
+  return types[Math.floor(Math.random() * types.length)];
+}
+
+// ── EXERCISE BANK ──
+let exerciseBank = [];        // loaded from exercises.json
+let bankByType = {};          // indexed by type
+let bankUsed = new Set();     // track used indices to avoid repeats
+let nextExercise = null;      // pre-fetched dynamic exercise
+let prefetching = false;
+
+async function loadExerciseBank() {
+  try {
+    const res = await fetch('exercises.json');
+    if (!res.ok) return;
+    exerciseBank = await res.json();
+    // index by type
+    exerciseBank.forEach((ex, i) => {
+      if (!bankByType[ex.type]) bankByType[ex.type] = [];
+      bankByType[ex.type].push(i);
+    });
+    console.log(`Bank loaded: ${exerciseBank.length} exercises`);
+  } catch(e) {
+    console.log('No exercise bank found, using dynamic only');
+  }
+}
+
+function getFromBank(type) {
+  const pool = type === 'random'
+    ? exerciseBank.map((_,i) => i)
+    : (bankByType[type] || []);
+  const unused = pool.filter(i => !bankUsed.has(i));
+  const candidates = unused.length > 0 ? unused : pool; // reset if exhausted
+  if (!candidates.length) return null;
+  const idx = candidates[Math.floor(Math.random() * candidates.length)];
+  bankUsed.add(idx);
+  if (bankUsed.size > exerciseBank.length * 0.8) bankUsed.clear(); // reset at 80%
+  return exerciseBank[idx];
+}
+
+async function prefetchDynamic(type, wordList) {
+  if (prefetching) return;
+  prefetching = true;
+  try {
+    const prompts = buildPrompts(wordList);
+    const t = type === 'random' ? getRandomExType() : type;
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 700,
+        messages: [{ role: 'user', content: prompts[t] }]
+      })
+    });
+    const data = await response.json();
+    const raw = data.content.find(b => b.type === 'text')?.text || '';
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const start = clean.indexOf('{'); const end = clean.lastIndexOf('}') + 1;
+    const ex = JSON.parse(clean.slice(start, end));
+    ex.type = t;
+    nextExercise = ex;
+  } catch(e) {
+    nextExercise = null;
+  }
+  prefetching = false;
+}
+
+function buildPrompts(wordList) {
+  return {
+    topic: `Crea ejercicio TOPIK I 화제 고르기. 2 oraciones, 4 opciones de 1 palabra. Contexto: ${wordList}. JSON sin markdown: {"type":"topic","instruction":"무엇에 대한 이야기입니까?","prompt":"oración1. oración2.","options":["단어1","단어2","단어3","단어4"],"correct":0,"explanation":"explicación"}`,
+    fill: `Crea ejercicio TOPIK I 빈칸 채우기. Oración con ( ). 4 opciones. Contexto: ${wordList}. JSON sin markdown: {"type":"fill","instruction":"<보기>와 같이 ( )에 들어갈 가장 알맞은 것을 고르십시오.","prompt":"oración con ( ).","options":["op1","op2","op3","op4"],"correct":0,"explanation":"explicación"}`,
+    dialogue: `Crea ejercicio TOPIK I 대화 완성. Diálogo 가/나. Contexto: ${wordList}. JSON sin markdown: {"type":"dialogue","instruction":"다음을 듣고 <보기>와 같이 물음에 맞는 대답을 고르십시오.","prompt":"가: [pregunta]\n나: ___","options":["op1","op2","op3","op4"],"correct":0,"explanation":"explicación"}`,
+    place: `Crea ejercicio TOPIK I 장소 찾기. Diálogo con pistas del lugar. Contexto: ${wordList}. JSON sin markdown: {"type":"place","instruction":"여기는 어디입니까?","prompt":"가: [línea1]\n나: [línea2]","options":["장소1","장소2","장소3","장소4"],"correct":0,"explanation":"explicación"}`,
+    match: `Crea ejercicio TOPIK I 내용과 같은 것 고르기. Párrafo 3-4 oraciones. Contexto: ${wordList}. JSON sin markdown: {"type":"match","instruction":"다음을 읽고 내용과 같은 것을 고르십시오.","prompt":"párrafo","options":["op1","op2","op3","op4"],"correct":0,"explanation":"explicación"}`,
+    insert: `Crea ejercicio TOPIK I 문장 넣기. Párrafo con (㉠)(㉡)(㉢)(㉣). Contexto: ${wordList}. JSON sin markdown: {"type":"insert","instruction":"다음 문장이 들어갈 곳으로 가장 알맞은 것을 고르십시오.","prompt":"párrafo con (㉠)(㉡)(㉢)(㉣)","sentence":"oración","options":["①㉠","②㉡","③㉢","④㉣"],"correct":1,"explanation":"explicación"}`,
+    passage: `Crea ejercicio TOPIK I 지문 읽기 con 2 preguntas. Párrafo con (㉠). Contexto: ${wordList}. JSON sin markdown: {"type":"passage","instruction":"다음을 읽고 물음에 답하십시오.","prompt":"párrafo con (㉠)","q1":{"question":"㉠에 들어갈 말로 가장 알맞은 것을 고르십시오.","options":["op1","op2","op3","op4"],"correct":0},"q2":{"question":"윗글의 내용과 같은 것을 고르십시오.","options":["op1","op2","op3","op4"],"correct":2},"explanation":"explicación"}`,
+  };
+}
+
+// use_dynamic toggles whether we prefer dynamic or static this round
+let dynamicCounter = 0;
+
+async function generateExercise() {
+  const card = document.getElementById('exercise-card');
+  const type = exType === 'random' ? getRandomExType() : exType;
+  const typeLabel = EX_TYPES[type] || type;
+
+  const sample = [...allWords].sort(() => Math.random()-0.5).slice(0,6);
+  const wordList = sample.map(w => `${w.korean}(${w.es})`).join(', ');
+
+  dynamicCounter++;
+  const useDynamic = dynamicCounter % 2 === 0; // alternate: 1 static, 1 dynamic
+
+  // Try pre-fetched dynamic first (if it's a dynamic turn and we have one)
+  if (useDynamic && nextExercise) {
+    const ex = nextExercise;
+    nextExercise = null;
+    const label = EX_TYPES[ex.type] || ex.type;
+    renderExercise(ex, label);
+    // prefetch next in background
+    setTimeout(() => prefetchDynamic(type, wordList), 100);
+    return;
+  }
+
+  // Try static bank
+  const bankEx = getFromBank(type);
+  if (bankEx) {
+    renderExercise(bankEx, EX_TYPES[bankEx.type] || bankEx.type);
+    // prefetch dynamic in background for next dynamic turn
+    if (!nextExercise && !prefetching) {
+      setTimeout(() => prefetchDynamic(type, wordList), 500);
+    }
+    return;
+  }
+
+  // Fallback: generate dynamically (show spinner)
+  card.innerHTML = `<div class="loading-exercise"><div class="spinner"></div>Generando ejercicio...</div>`;
+
+  // Dynamic generation fallback
+  const prompts = buildPrompts(wordList);
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 700,
+        messages: [{ role: 'user', content: prompts[type] }]
+      })
+    });
+    const data = await response.json();
+    const raw = data.content.find(b => b.type === 'text')?.text || '';
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const s = clean.indexOf('{'); const e2 = clean.lastIndexOf('}') + 1;
+    const ex = JSON.parse(clean.slice(s, e2));
+    ex.type = type;
+    renderExercise(ex, typeLabel);
+    // prefetch next
+    setTimeout(() => prefetchDynamic(type, wordList), 200);
+  } catch(e) {
+    card.innerHTML = `<div style="color:var(--wrong);padding:1rem;">Error generando el ejercicio. Intenta de nuevo.<br><small>${e.message}</small></div>`;
+  }
+}
+
+function renderExercise(ex, typeLabel) {
+  const card = document.getElementById('exercise-card');
+
+  const promptDisplay = (ex.prompt||'').replace(/\(㉠\)/g,'<span class="blank">（　）</span>').replace(/\(　　\)/g,'<span class="blank">（　）</span>').replace(/___/g,'<span class="blank">___</span>').replace(/\n/g,'<br>');
+  const instructionHtml = ex.instruction ? `<div class="exercise-instruction">${ex.instruction}</div>` : '';
+
+  // passage type: 2 questions
+  if (ex.type === 'passage' && ex.q1 && ex.q2) {
+    const nums = ['①','②','③','④'];
+    const q1opts = ex.q1.options.map((o,i) =>
+      `<button class="ex-opt" onclick="checkExPassage(this,${i},${ex.q1.correct},1)">${nums[i]} ${o}</button>`
+    ).join('');
+    const q2opts = ex.q2.options.map((o,i) =>
+      `<button class="ex-opt" onclick="checkExPassage(this,${i},${ex.q2.correct},2)">${nums[i]} ${o}</button>`
+    ).join('');
+    card.innerHTML = `
+      <div class="exercise-type-label">${typeLabel}</div>
+      ${instructionHtml}
+      <div class="exercise-prompt">${promptDisplay}</div>
+      <div class="exercise-sub-label">${ex.q1.question}</div>
+      <div class="exercise-options" id="ex-opts-1">${q1opts}</div>
+      <div class="exercise-sub-label" style="margin-top:0.8rem">${ex.q2.question}</div>
+      <div class="exercise-options" id="ex-opts-2">${q2opts}</div>
+      <div class="exercise-explanation" id="ex-explanation">${ex.explanation}</div>`;
+    return;
+  }
+
+  // insert type: show sentence to insert
+  const sentenceHtml = ex.sentence ? `<div style="margin:0.6rem 0;padding:0.6rem 1rem;background:rgba(91,142,240,0.1);border-left:3px solid var(--accent2);border-radius:0 8px 8px 0;font-family:'Noto Sans KR',sans-serif;font-size:0.95rem;">${ex.sentence}</div>` : '';
+
+  const optsHtml = (ex.options||[]).map((o, i) =>
+    `<button class="ex-opt" onclick="checkEx(this,${i},${ex.correct})">${o}</button>`
+  ).join('');
+
+  card.innerHTML = `
+    <div class="exercise-type-label">${typeLabel}</div>
+    ${instructionHtml}
+    <div class="exercise-prompt">${promptDisplay}</div>
+    ${sentenceHtml}
+    <div class="exercise-options">${optsHtml}</div>
+    <div class="exercise-explanation" id="ex-explanation">${ex.explanation}</div>`;
+}
+
+// CSS for sub-label and instruction
+const extraStyle = document.createElement('style');
+extraStyle.textContent = `
+  .exercise-instruction { font-size: 0.82rem; color: var(--muted); margin-bottom: 0.5rem; font-style: italic; }
+  .exercise-sub-label { font-size: 0.82rem; color: var(--accent2); margin: 0.3rem 0; font-weight: 500; }
+`;
+document.head.appendChild(extraStyle);
+
+function checkExPassage(btn, selected, correct, qNum) {
+  const grp = document.querySelectorAll(`#ex-opts-${qNum} .ex-opt`);
+  grp.forEach(b => b.disabled = true);
+  grp[correct].classList.add('correct');
+  if (selected === correct) { gCorrect++; }
+  else { btn.classList.add('wrong'); gWrong++; }
+  document.getElementById('g-correct').textContent = gCorrect;
+  document.getElementById('g-wrong').textContent = gWrong;
+  // show explanation only after both answered
+  const allDone = [...document.querySelectorAll('.ex-opt')].every(b => b.disabled);
+  if (allDone) document.getElementById('ex-explanation').classList.add('visible');
+}
+
+function checkEx(btn, selected, correct) {
+  const opts = document.querySelectorAll('.ex-opt');
+  opts.forEach(b => b.disabled = true);
+  opts[correct].classList.add('correct');
+  if (selected === correct) { gCorrect++; }
+  else { btn.classList.add('wrong'); gWrong++; }
+  document.getElementById('g-correct').textContent = gCorrect;
+  document.getElementById('g-wrong').textContent = gWrong;
+  document.getElementById('ex-explanation').classList.add('visible');
 }
 
 document.addEventListener('keydown',e=>{
