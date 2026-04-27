@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TOPIK I — Vocabulario</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --card-bg: #161619;
+    --card-front: #1c1c21;
+    --accent: #e8c14a;
+    --accent2: #5b8ef0;
+    --text: #f0ede8;
+    --muted: #6b6b7a;
+    --border: #2a2a35;
+    --correct: #4caf7d;
+    --wrong: #e05555;
+    --tag-bg: #23232e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+  header { width: 100%; max-width: 900px; padding: 2rem 1.5rem 1rem; display: flex; flex-direction: column; gap: 1.2rem; }
+  .title-row { display: flex; align-items: baseline; gap: 1rem; }
+  h1 { font-family: 'DM Serif Display', serif; font-size: 2rem; color: var(--accent); letter-spacing: -0.02em; }
+  .subtitle { font-size: 0.85rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .controls { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; }
+  .filter-label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-right: 0.2rem; }
+  .tag { padding: 0.35rem 0.85rem; border-radius: 20px; border: 1px solid var(--border); background: var(--tag-bg); color: var(--muted); font-size: 0.8rem; cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', sans-serif; }
+  .tag:hover { border-color: var(--accent); color: var(--accent); }
+  .tag.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 500; }
+  .search-wrap { flex: 1; min-width: 180px; position: relative; }
+  .search-wrap input { width: 100%; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.45rem 0.9rem 0.45rem 2rem; color: var(--text); font-size: 0.85rem; font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.2s; }
+  .search-wrap input:focus { border-color: var(--accent2); }
+  .search-wrap::before { content: '🔍'; position: absolute; left: 0.6rem; top: 50%; transform: translateY(-50%); font-size: 0.75rem; opacity: 0.5; }
+  .mode-btns { display: flex; gap: 0.5rem; }
+  .mode-btn { padding: 0.4rem 1rem; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 0.82rem; cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', sans-serif; }
+  .mode-btn:hover { color: var(--text); border-color: var(--muted); }
+  .mode-btn.active { background: var(--accent2); color: #fff; border-color: var(--accent2); }
+  .stats-bar { width: 100%; max-width: 900px; padding: 0 1.5rem; display: flex; gap: 1.5rem; font-size: 0.8rem; color: var(--muted); }
+  .stat span { color: var(--text); font-weight: 500; }
+
+  /* FLASHCARD */
+  #flashcard-mode { width: 100%; max-width: 520px; padding: 1.5rem; display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
+  .progress-bar-wrap { width: 100%; height: 3px; background: var(--border); border-radius: 2px; }
+  .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s ease; }
+  .card-counter { font-size: 0.8rem; color: var(--muted); align-self: flex-end; }
+  .card-scene { width: 100%; height: 280px; perspective: 1000px; cursor: pointer; }
+  .card-inner { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.55s cubic-bezier(.4,0,.2,1); }
+  .card-inner.flipped { transform: rotateY(180deg); }
+  .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.8rem; padding: 2rem; border: 1px solid var(--border); }
+  .card-front { background: var(--card-front); }
+  .card-back { background: linear-gradient(135deg, #1a1a2e, #16213e); transform: rotateY(180deg); border-color: var(--accent2); }
+  .korean-word { font-family: 'Noto Sans KR', sans-serif; font-size: 3.5rem; font-weight: 700; color: var(--text); line-height: 1; }
+  .word-num { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+  .tap-hint { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.05em; position: absolute; bottom: 1rem; }
+  .translation-es { font-size: 1.6rem; font-family: 'DM Serif Display', serif; color: var(--text); text-align: center; line-height: 1.2; }
+  .translation-en { font-size: 0.8rem; color: var(--muted); text-align: center; margin-top: -0.3rem; }
+  .category-badge { padding: 0.25rem 0.8rem; border-radius: 20px; font-size: 0.72rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; }
+  .card-nav { display: flex; gap: 1rem; width: 100%; justify-content: center; }
+  .nav-btn { flex: 1; max-width: 140px; padding: 0.75rem; border-radius: 10px; border: none; font-size: 0.9rem; font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer; transition: all 0.18s; }
+  .btn-prev { background: var(--tag-bg); color: var(--muted); border: 1px solid var(--border); }
+  .btn-prev:hover { color: var(--text); }
+  .btn-next { background: var(--accent); color: #000; }
+  .btn-next:hover { filter: brightness(1.1); }
+  .btn-shuffle { background: var(--tag-bg); color: var(--muted); border: 1px solid var(--border); }
+  .btn-shuffle:hover { color: var(--accent2); border-color: var(--accent2); }
+
+  /* GRID */
+  #grid-mode { width: 100%; max-width: 900px; padding: 1rem 1.5rem 3rem; display: none; }
+  .vocab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.7rem; }
+  .vocab-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; display: flex; flex-direction: column; gap: 0.3rem; transition: border-color 0.2s, transform 0.15s; }
+  .vocab-card:hover { border-color: var(--accent2); transform: translateY(-2px); }
+  .vocab-card .korean { font-family: 'Noto Sans KR', sans-serif; font-size: 1.3rem; font-weight: 700; }
+  .vocab-card .eng-es { font-size: 0.85rem; color: var(--text); line-height: 1.3; }
+  .vocab-card .eng-en { font-size: 0.72rem; color: var(--muted); line-height: 1.3; }
+  .vocab-card .cat { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.07em; margin-top: 0.2rem; }
+
+  /* QUIZ */
+  #quiz-mode { width: 100%; max-width: 540px; padding: 1.5rem; display: none; flex-direction: column; align-items: center; gap: 1.5rem; }
+  .quiz-question { font-family: 'Noto Sans KR', sans-serif; font-size: 3rem; font-weight: 700; text-align: center; color: var(--text); }
+  .quiz-instruction { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; width: 100%; }
+  .quiz-opt { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem 1.1rem; text-align: left; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--text); cursor: pointer; transition: all 0.18s; display: flex; flex-direction: column; gap: 0.15rem; }
+  .quiz-opt:hover:not(:disabled) { border-color: var(--accent2); color: var(--accent2); }
+  .quiz-opt.correct { border-color: var(--correct); background: rgba(76,175,125,0.12); color: var(--correct); }
+  .quiz-opt.wrong { border-color: var(--wrong); background: rgba(224,85,85,0.1); color: var(--wrong); }
+  .quiz-opt:disabled { cursor: default; }
+  .quiz-opt .opt-es { font-size: 0.9rem; }
+  .quiz-opt .opt-en { font-size: 0.72rem; color: var(--muted); }
+  .quiz-opt.correct .opt-en, .quiz-opt.wrong .opt-en { color: inherit; opacity: 0.7; }
+  .quiz-score-row { display: flex; gap: 2rem; font-size: 0.85rem; }
+  .quiz-score-row .correct-count { color: var(--correct); }
+  .quiz-score-row .wrong-count { color: var(--wrong); }
+  .quiz-next { padding: 0.7rem 2rem; border-radius: 10px; border: none; background: var(--accent); color: #000; font-family: 'DM Sans', sans-serif; font-weight: 500; font-size: 0.9rem; cursor: pointer; transition: filter 0.18s; display: none; }
+  .quiz-next:hover { filter: brightness(1.1); }
+
+  .cat-verbo { background: rgba(91,142,240,0.15); color: #5b8ef0; }
+  .cat-sustantivo { background: rgba(232,193,74,0.15); color: #e8c14a; }
+  .cat-adjetivo { background: rgba(76,175,125,0.15); color: #4caf7d; }
+  .cat-adverbio { background: rgba(200,130,200,0.15); color: #c882c8; }
+  .cat-expresión { background: rgba(255,140,80,0.15); color: #ff8c50; }
+  .cat-número { background: rgba(100,200,220,0.15); color: #64c8dc; }
+  .cat-otro { background: rgba(150,150,160,0.15); color: #969696; }
+  .empty-state { text-align: center; color: var(--muted); padding: 3rem; font-size: 0.9rem; grid-column: 1/-1; }
+</style>
+</head>
+<body>
+<header>
+  <div class="title-row">
+    <h1>TOPIK I</h1>
+    <span class="subtitle">Vocabulario · 1053 palabras</span>
+  </div>
+  <div class="controls">
+    <span class="filter-label">Categoría</span>
+    <button class="tag active" onclick="setCategory('todas',this)">Todas</button>
+    <button class="tag" onclick="setCategory('verbo',this)">Verbos</button>
+    <button class="tag" onclick="setCategory('sustantivo',this)">Sustantivos</button>
+    <button class="tag" onclick="setCategory('adjetivo',this)">Adjetivos</button>
+    <button class="tag" onclick="setCategory('adverbio',this)">Adverbios</button>
+    <button class="tag" onclick="setCategory('expresión',this)">Expresiones</button>
+    <button class="tag" onclick="setCategory('número',this)">Números</button>
+  </div>
+  <div class="controls">
+    <div class="search-wrap">
+      <input type="text" id="search" placeholder="Buscar palabra o traducción..." oninput="handleSearch()">
+    </div>
+    <div class="mode-btns">
+      <button class="mode-btn active" onclick="setMode('flashcard',this)">Flashcards</button>
+      <button class="mode-btn" onclick="setMode('grid',this)">Lista</button>
+      <button class="mode-btn" onclick="setMode('quiz',this)">Quiz</button>
+    </div>
+  </div>
+</header>
+
+<div class="stats-bar">
+  <div class="stat">Mostrando <span id="count-display">1053</span> palabras</div>
+  <div class="stat" id="quiz-stats-bar" style="display:none">✓ <span id="q-correct" style="color:var(--correct)">0</span> &nbsp;✗ <span id="q-wrong" style="color:var(--wrong)">0</span></div>
+</div>
+
+<div id="flashcard-mode">
+  <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-fill"></div></div>
+  <div class="card-counter" id="card-counter">1 / 1053</div>
+  <div class="card-scene" onclick="flipCard()">
+    <div class="card-inner" id="card-inner">
+      <div class="card-face card-front">
+        <div class="word-num" id="card-num">#1</div>
+        <div class="korean-word" id="card-korean">가게</div>
+        <div class="tap-hint">Toca para ver significado</div>
+      </div>
+      <div class="card-face card-back">
+        <div class="translation-es" id="card-translation-es">tienda</div>
+        <div class="translation-en" id="card-translation-en">(store, shop)</div>
+        <div class="category-badge" id="card-category">sustantivo</div>
+      </div>
+    </div>
+  </div>
+  <div class="card-nav">
+    <button class="nav-btn btn-prev" onclick="prevCard()">← Anterior</button>
+    <button class="nav-btn btn-shuffle" onclick="shuffleDeck()">⇄ Mezclar</button>
+    <button class="nav-btn btn-next" onclick="nextCard()">Siguiente →</button>
+  </div>
+</div>
+
+<div id="grid-mode">
+  <div class="vocab-grid" id="vocab-grid"></div>
+</div>
+
+<div id="quiz-mode">
+  <div class="quiz-score-row">
+    <span class="correct-count">✓ <span id="qc">0</span> correctas</span>
+    <span class="wrong-count">✗ <span id="qw">0</span> incorrectas</span>
+  </div>
+  <div class="quiz-instruction">¿Qué significa esta palabra?</div>
+  <div class="quiz-question" id="quiz-q">가게</div>
+  <div class="quiz-options" id="quiz-opts"></div>
+  <button class="quiz-next" id="quiz-next-btn" onclick="nextQuiz()">Siguiente →</button>
+</div>
+
+<script>
+const rawData = [
+["가게","tienda","store, shop","sustantivo"],
+["가격","precio","price","sustantivo"],
+["가구","muebles","furniture","sustantivo"],
+["가깝다","cercano","close","adjetivo"],
+["가끔","a veces","sometimes","adverbio"],
+["가다","ir","go","verbo"],
+["가르치다","enseñar","teach","verbo"],
+["가방","bolso, mochila","bag","sustantivo"],
+["가볍다","ligero","light","adjetivo"],
+["가수","cantante","singer","sustantivo"],
+["가슴","pecho","chest, breast","sustantivo"],
+["가요","canción","song","sustantivo"],
+["가운데","centro, en medio","middle","sustantivo"],
+["가위","tijeras","scissors","sustantivo"],
+["가을","otoño","autumn, fall","sustantivo"],
+["가장","el más, principalmente","most","adverbio"],
+["가져가다","llevarse","take away","verbo"],
+["가져오다","traer","bring","verbo"],
+["가족","familia","family","sustantivo"],
+["가지","rama","branch","sustantivo"],
+["가지다","tener","have","verbo"],
+["각","cada","each","otro"],
+["간","mientras","while","otro"],
+["간단하다","simple, fácil","simple, easy","adjetivo"],
+["간단히","simplemente","simply","adverbio"],
+["간식","merienda, snack","snack","sustantivo"],
+["간장","salsa de soya","soy sauce","sustantivo"],
+["간호사","enfermera/o","nurse","sustantivo"],
+["갈비","costillas","spareribs","sustantivo"],
+["갈비탕","sopa de costillas","spareribs soup","sustantivo"],
+["갈색","marrón","brown","sustantivo"],
+["갈아타다","transbordar","transfer","verbo"],
+["감","caqui","persimmon","sustantivo"],
+["감기","frío","cold","sustantivo"],
+["감기약","medicina para el resfriado","cold medicine","sustantivo"],
+["감다","cerrar los ojos","close eyes","verbo"],
+["감동","emoción, conmoción","sensation","sustantivo"],
+["감동하다","estar impresionado","be impressed","verbo"],
+["감사","gracias, agradecimiento","thank","sustantivo"],
+["감사드립니다","gracias","thank you","expresión"],
+["감사하다","agradecer","thank, appreciate","verbo"],
+["감사합니다","gracias","thank you","expresión"],
+["감자","papa","potato","sustantivo"],
+["감자탕","sopa de papa","potato soup","sustantivo"],
+["갑자기","de repente","suddenly","adverbio"],
+["값","precio","price","sustantivo"],
+["강","río","river","sustantivo"],
+["강아지","cachorro","puppy","sustantivo"],
+["강좌","curso, clase","lecture","sustantivo"],
+["갖다","tener","have","verbo"],
+["같다","igual, mismo","same","adjetivo"],
+["같이","juntos","together","adverbio"],
+["개","perro","dog","sustantivo"],
+["개나리","forsitia","forsythia","sustantivo"],
+["개인","individuo, personal","individual","sustantivo"],
+["거기","allí, ahí","there","adverbio"],
+["거리","calle","street","sustantivo"],
+["거실","sala de estar","living room","sustantivo"],
+["거울","espejo","mirror","sustantivo"],
+["거의","casi","almost, nearly","adverbio"],
+["거짓말","mentira","lie","sustantivo"],
+["걱정","ansiedad, preocupación","anxiety, concern","sustantivo"],
+["걱정하다","preocuparse","worry","verbo"],
+["건강","salud","health","sustantivo"],
+["건강하다","estar sano","be healthy","adjetivo"],
+["건너가다","cruzar la calle","cross a road","verbo"],
+["건너다","cruzar","cross over","verbo"],
+["건너편","lado opuesto","opposite side","sustantivo"],
+["건물","edificio","building","sustantivo"],
+["건배","salud, brindis","cheers, toast","sustantivo"],
+["걷다","caminar","walk","verbo"],
+["걸다","llamar","call","verbo"],
+["걸리다","tardar","take time","verbo"],
+["걸어가다","ir caminando","walk go","verbo"],
+["걸어오다","venir caminando","walk come","verbo"],
+["검은색","negro","black","sustantivo"],
+["것","cosa","thing","sustantivo"],
+["게임","juego","game","sustantivo"],
+["겨울","invierno","winter","sustantivo"],
+["겨울방학","vacaciones de invierno","winter vacation","sustantivo"],
+["결과","resultado","result","sustantivo"],
+["결정","decisión","decision","sustantivo"],
+["결정하다","decidir","decide","verbo"],
+["결혼","matrimonio","marriage","sustantivo"],
+["결혼식","ceremonia de boda","wedding ceremony","sustantivo"],
+["결혼하다","casarse","get married","verbo"],
+["경기","competencia, partido","competition, game","sustantivo"],
+["경기장","estadio","stadium","sustantivo"],
+["경복궁","Gyeongbokgung (palacio)","Gyeongbokgung","sustantivo"],
+["경주","Gyeongju (ciudad)","Gyeongju","sustantivo"],
+["경찰","policía","police","sustantivo"],
+["경찰관","oficial de policía","police officer","sustantivo"],
+["경찰서","comisaría","police office","sustantivo"],
+["경치","paisaje","landscape","sustantivo"],
+["경험","experiencia","experience","sustantivo"],
+["계단","escaleras","stairs","sustantivo"],
+["계란","huevo","egg","sustantivo"],
+["계산하다","calcular","calculate","verbo"],
+["계속","continuar, seguir","continue","adverbio"],
+["계시다","estar, existir (honorífico)","be, exist (honorific)","verbo"],
+["계절","estación del año","season","sustantivo"],
+["계획","plan","plan","sustantivo"],
+["고기","carne","meat","sustantivo"],
+["고등학교","colegio secundario","high school","sustantivo"],
+["고등학생","estudiante de secundaria","high school student","sustantivo"],
+["고르다","elegir","choose","verbo"],
+["고마웠습니다","gracias (pasado)","thank you (past)","expresión"],
+["고맙다","gracias, agradecimiento","thank","adjetivo"],
+["고맙습니다","gracias","thank you","expresión"],
+["고모","tía paterna","paternal aunt","sustantivo"],
+["고모부","tío paterno","paternal uncle","sustantivo"],
+["고속버스","bus expreso","express bus","sustantivo"],
+["고양이","gato","cat","sustantivo"],
+["고장","avería, falla","malfunction","sustantivo"],
+["고추","ají rojo","red pepper","sustantivo"],
+["고추장","pasta de ají rojo","red pepper paste","sustantivo"],
+["고치다","arreglar","fix","verbo"],
+["고프다","hambriento","hungry","adjetivo"],
+["고향","ciudad natal","hometown","sustantivo"],
+["곧","pronto","soon","adverbio"],
+["골목","callejón","alley","sustantivo"],
+["골프","golf","golf","sustantivo"],
+["곱다","hermoso","beautiful","adjetivo"],
+["곳","lugar","place","sustantivo"],
+["공","pelota","ball","sustantivo"],
+["공간","espacio","space","sustantivo"],
+["공기","aire","air","sustantivo"],
+["공무원","funcionario público","public official","sustantivo"],
+["공부","estudio, estudiar","study","sustantivo"],
+["공부하다","estudio, estudiar","study","verbo"],
+["공연","actuación, espectáculo","performance","sustantivo"],
+["공원","parque","park","sustantivo"],
+["공중전화","teléfono público","payphone","sustantivo"],
+["공짜","gratis","free","sustantivo"],
+["공책","cuaderno","notebook","sustantivo"],
+["공항","aeropuerto","airport","sustantivo"],
+["공휴일","feriado","public holiday","sustantivo"],
+["과거","pasado","past","sustantivo"],
+["과일","fruta","fruit","sustantivo"],
+["과자","merienda, snack","snack","sustantivo"],
+["과학","ciencia","science","sustantivo"],
+["관계","relación","relation","sustantivo"],
+["관광하다","hacer turismo","sightsee","verbo"],
+["관심","interés","interest","sustantivo"],
+["광고","publicidad, anuncio","advertisement","sustantivo"],
+["괜찮다","estar bien","be okay","adjetivo"],
+["괜찮습니다","está bien","it's fine","expresión"],
+["교과서","libro de texto","textbook","sustantivo"],
+["교수","profesor/a universitario/a","professor","sustantivo"],
+["교실","sala de clases","classroom","sustantivo"],
+["교통","tráfico","traffic","sustantivo"],
+["교통사고","accidente de tráfico","traffic accident","sustantivo"],
+["교회","iglesia","church","sustantivo"],
+["구경하다","mirar, echar un vistazo","take a look","verbo"],
+["구름","nube","cloud","sustantivo"],
+["구하다","buscar, conseguir","seek, get","verbo"],
+["국","sopa","soup","sustantivo"],
+["국내","nacional, doméstico","domestic","sustantivo"],
+["국수","fideos","noodle","sustantivo"],
+["국어","idioma coreano","Korean language","sustantivo"],
+["국적","nacionalidad","nationality","sustantivo"],
+["국제","internacional","international","sustantivo"],
+["군인","soldado","soldier","sustantivo"],
+["굽다","hornear, asar","bake","verbo"],
+["귀","oreja","ear","sustantivo"],
+["귀엽다","lindo, tierno","cute","adjetivo"],
+["규칙","regla","rule","sustantivo"],
+["귤","mandarina","mandarin orange","sustantivo"],
+["그냥","así nomás, tal cual","just, as it is","adverbio"],
+["그동안","mientras tanto","meanwhile","adverbio"],
+["그래","sí","yes, yeah","expresión"],
+["그래서","entonces, por eso","so, thus","adverbio"],
+["그러나","pero, sin embargo","but, however","adverbio"],
+["그러니까","entonces, porque","so, because","adverbio"],
+["그러면","entonces, en ese caso","then, if so","adverbio"],
+["그런데","por cierto, sin embargo","by the way","adverbio"],
+["그렇게","así, de esa manera","like that","adverbio"],
+["그렇구나","ya veo, ah sí","I see","expresión"],
+["그렇다","sí, así es","yes, that's it","adjetivo"],
+["그렇습니다","así es, correcto","that's right","expresión"],
+["그렇지만","sin embargo, pero","nevertheless, but","adverbio"],
+["그릇","tazón, cuenco","bowl","sustantivo"],
+["그리고","y, además","and","adverbio"],
+["그리다","dibujar","draw","verbo"],
+["그림","dibujo, imagen","drawing, picture","sustantivo"],
+["그만","ya, basta","stop, finish","adverbio"],
+["글","texto, escrito","sentence, post","sustantivo"],
+["글쎄요","no sé, bueno","I don't know, well","expresión"],
+["금방","hace un momento, pronto","soon, a little while ago","adverbio"],
+["금연","no fumar","no smoking","sustantivo"],
+["금요일","viernes","Friday","sustantivo"],
+["급하다","urgente","urgent","adjetivo"],
+["기간","período","period","sustantivo"],
+["기다리다","esperar","wait","verbo"],
+["기름","aceite","oil","sustantivo"],
+["기분","sentimiento, ánimo","feeling","sustantivo"],
+["기쁘다","feliz","happy","adjetivo"],
+["기사","artículo, conductor","article, driver","sustantivo"],
+["기숙사","dormitorio estudiantil","dormitory","sustantivo"],
+["기억하다","recordar","remember","verbo"],
+["기온","temperatura","temperature","sustantivo"],
+["기자","periodista","reporter","sustantivo"],
+["기차","tren","train","sustantivo"],
+["기침","tos","cough","sustantivo"],
+["긴장되다","estar nervioso","be nervous","verbo"],
+["길","camino, calle","way, road","sustantivo"],
+["길다","largo","long","adjetivo"],
+["김","alga marina","seaweed","sustantivo"],
+["김밥","Gimbap (rollo de arroz)","Kimbab","sustantivo"],
+["김치","Kimchi","Kimchi","sustantivo"],
+["김치찌개","estofado de Kimchi","Kimchi stew","sustantivo"],
+["까맣다","negro","black","adjetivo"],
+["깎다","cortar, afeitar","cut, shave","verbo"],
+["깜짝","sorprendido, asustado","startled","adverbio"],
+["깨끗하다","limpio","clean","adjetivo"],
+["깨다","despertar, romper","wake up, break","verbo"],
+["꺼내다","sacar","take out","verbo"],
+["껌","chicle","chewing gum","sustantivo"],
+["꼭","exactamente, sin falta","exactly, absolutely","adverbio"],
+["꽃","flor","flower","sustantivo"],
+["꽃집","florería","florist","sustantivo"],
+["꾸다","soñar, sueño","dream","verbo"],
+["꿈","soñar, sueño","dream","sustantivo"],
+["끄다","apagar","turn off","verbo"],
+["끓이다","hervir","boil","verbo"],
+["끝","fin, final","end","sustantivo"],
+["끝나다","terminar, acabar","finish, end","verbo"],
+["끝내다","terminar","finish","verbo"],
+["나","yo","I","sustantivo"],
+["나가다","salir","go out","verbo"],
+["나누다","compartir, dividir","share, divide","verbo"],
+["나다","ocurrir, surgir","occur","verbo"],
+["나라","país","country","sustantivo"],
+["나무","árbol","tree","sustantivo"],
+["나빠지다","empeorar","deteriorate","verbo"],
+["나쁘다","malo","bad","adjetivo"],
+["나오다","salir, aparecer","come out","verbo"],
+["나이","edad","age","sustantivo"],
+["나중","después, más tarde","later","adverbio"],
+["나타나다","aparecer","appear","verbo"],
+["낚시","pesca","fishing","sustantivo"],
+["날","día","day","sustantivo"],
+["날씨","clima, tiempo","weather","sustantivo"],
+["날짜","fecha","date","sustantivo"],
+["남기다","dejar","leave","verbo"],
+["남동생","hermano menor","younger brother","sustantivo"],
+["남자","hombre","man","sustantivo"],
+["남쪽","sur","south","sustantivo"],
+["남편","esposo, marido","husband","sustantivo"],
+["낮","mediodía","noon","sustantivo"],
+["낮다","bajo","low","adjetivo"],
+["내년","el próximo año","next year","sustantivo"],
+["내다","pagar, sacar","pay, put out","verbo"],
+["내려가다","bajar","go down","verbo"],
+["내용","contenido","content","sustantivo"],
+["내일","mañana","tomorrow","sustantivo"],
+["냄새","olor","smell","sustantivo"],
+["냉면","fideos fríos","cold noodle","sustantivo"],
+["냉장고","refrigerador","refrigerator","sustantivo"],
+["너","tú, usted","you","sustantivo"],
+["너무","demasiado, muy","too, very","adverbio"],
+["넓다","amplio, ancho","wide","adjetivo"],
+["넘다","superar","exceed","verbo"],
+["넘어지다","caerse","fall down","verbo"],
+["넣다","meter, poner","put in","verbo"],
+["년","año","year","sustantivo"],
+["노란색","color amarillo","yellow color","sustantivo"],
+["노랗다","amarillo","yellow","adjetivo"],
+["노래","canción","song","sustantivo"],
+["노래방","karaoke","karaoke","sustantivo"],
+["노래하다","cantar","sing","verbo"],
+["노력하다","esforzarse","strive","verbo"],
+["노트","nota, apunte","note","sustantivo"],
+["녹색","verde","green","sustantivo"],
+["녹차","té verde","green tea","sustantivo"],
+["놀다","jugar","play","verbo"],
+["놀라다","sorprenderse","be surprised","verbo"],
+["농구","básquetbol","basketball","sustantivo"],
+["높다","alto","high","adjetivo"],
+["놓다","poner","put","verbo"],
+["눈","ojo, nieve","eye, snow","sustantivo"],
+["눈물","lágrima","tear","sustantivo"],
+["눈사람","muñeco de nieve","snowman","sustantivo"],
+["눕다","acostarse","lie down","verbo"],
+["뉴스","noticias","news","sustantivo"],
+["느끼다","sentir","feel","verbo"],
+["느낌","sentimiento, ánimo","feeling","sustantivo"],
+["느리다","lento","slow","adjetivo"],
+["늘","siempre","always","adverbio"],
+["늘다","aumentar","increase","verbo"],
+["능력","habilidad, capacidad","ability","sustantivo"],
+["늦다","tarde","late","adjetivo"],
+["늦잠","quedarse dormido","sleeping in late","sustantivo"],
+["다","todo","all, whole","adverbio"],
+["다녀오다","volver, regresar","come back","verbo"],
+["다니다","ir y venir, asistir","commute","verbo"],
+["다르다","diferente","different","adjetivo"],
+["다리","puente, pierna","bridge, leg","sustantivo"],
+["다시","de nuevo, otra vez","again","adverbio"],
+["다음","siguiente, próximo","next","sustantivo"],
+["다음달","el próximo mes","next month","sustantivo"],
+["다음주","la próxima semana","next week","sustantivo"],
+["다이어트","dieta","diet","sustantivo"],
+["다치다","lastimarse, hacerse daño","hurt","verbo"],
+["닦다","limpiar, pulir","wipe, polish","verbo"],
+["단어","palabra","word","sustantivo"],
+["단점","desventaja, defecto","shortcoming","sustantivo"],
+["닫다","cercano","close","verbo"],
+["달","mes, luna","month, moon","sustantivo"],
+["달걀","huevo","egg","sustantivo"],
+["달다","dulce","sweet","adjetivo"],
+["달러","dólar","dollar","sustantivo"],
+["달력","calendario","calendar","sustantivo"],
+["달리다","correr","run","verbo"],
+["닭","pollo","chicken","sustantivo"],
+["닭고기","carne de pollo","chicken meat","sustantivo"],
+["닮다","parecerse","resemble","verbo"],
+["담배","tabaco","tobacco","sustantivo"],
+["답장","respuesta","reply","sustantivo"],
+["당근","zanahoria","carrot","sustantivo"],
+["당신","tú, usted","you","sustantivo"],
+["대답","respuesta","answer","sustantivo"],
+["대답하다","responder","answer, reply","verbo"],
+["대부분","en su mayoría","mostly","adverbio"],
+["대사관","embajada","embassy","sustantivo"],
+["대학","universidad","university","sustantivo"],
+["대학교","universidad","university","sustantivo"],
+["대학생","estudiante universitario","college student","sustantivo"],
+["대학원","posgrado","graduate school","sustantivo"],
+["대한민국","República de Corea","Republic of Korea","sustantivo"],
+["대화","conversación, diálogo","conversation","sustantivo"],
+["대회","competencia","competition","sustantivo"],
+["더","más","more","adverbio"],
+["더럽다","sucio","dirty","adjetivo"],
+["덥다","caluroso, caliente","hot","adjetivo"],
+["덮다","cubrir, tapar","cover","verbo"],
+["데리다","traer, acompañar","bring along","verbo"],
+["도로","carretera, camino","road","sustantivo"],
+["도서관","biblioteca","library","sustantivo"],
+["도시","ciudad","city","sustantivo"],
+["도와주다","ayudar, ayuda","help","verbo"],
+["도움","ayudar, ayuda","help","sustantivo"],
+["도착","llegada","arrival","sustantivo"],
+["도착하다","llegar","arrive","verbo"],
+["독서","lectura","reading","sustantivo"],
+["독서하다","leer","read","verbo"],
+["돈","dinero","money","sustantivo"],
+["돌아가다","volver, regresar","go back","verbo"],
+["돌아오다","volver, regresar","come back","verbo"],
+["돕다","ayudar, ayuda","help","verbo"],
+["동네","barrio, vecindario","neighborhood","sustantivo"],
+["동물","animal","animal","sustantivo"],
+["동아리","club, grupo","club, group","sustantivo"],
+["동안","durante","during","adverbio"],
+["동전","moneda","coin","sustantivo"],
+["동쪽","este, oriente","east","sustantivo"],
+["돼지","cerdo","pig","sustantivo"],
+["돼지고기","cerdo, carne de cerdo","pork","sustantivo"],
+["되다","convertirse, hacerse","become","verbo"],
+["된장","pasta de soja fermentada","fermented soybean paste","sustantivo"],
+["된장찌개","estofado de pasta de soja","soybean paste stew","sustantivo"],
+["두껍다","grueso","thick","adjetivo"],
+["두부","tofu","tofu","sustantivo"],
+["뒤","parte de atrás, trasero","rear, back","sustantivo"],
+["드라마","drama","drama","sustantivo"],
+["드리다","dar","give","verbo"],
+["드시다","comer (honorífico)","eat (honorific)","verbo"],
+["듣기","escuchar, comprensión auditiva","listening","sustantivo"],
+["듣다","escuchar","listen","verbo"],
+["들다","sostener, entrar","hold, enter","verbo"],
+["들어가다","entrar","enter","verbo"],
+["등산","senderismo, montañismo","hiking","sustantivo"],
+["따뜻하다","cálido, tibio","warm","adjetivo"],
+["따라가다","seguir","follow","verbo"],
+["따로","por separado","separately","adverbio"],
+["딸","hija","daughter","sustantivo"],
+["딸기","fresa, frutilla","strawberry","sustantivo"],
+["때","momento, cuando","time","sustantivo"],
+["때문","porque","because","otro"],
+["떠나다","dejar","leave","verbo"],
+["떡","rice cake","rice cake","sustantivo"],
+["떡볶이","Tteokbokki (pastel de arroz picante)","Tteokbokki","sustantivo"],
+["떨어지다","caer","drop","verbo"],
+["또","de nuevo, otra vez","again","adverbio"],
+["또는","o","or","adverbio"],
+["똑같다","igual, mismo","same","adjetivo"],
+["똑바로","recto, derecho","straight","adverbio"],
+["뛰다","correr","run","verbo"],
+["뜨겁다","caluroso, caliente","hot","adjetivo"],
+["뜻","significado","meaning","sustantivo"],
+["라디오","radio","radio","sustantivo"],
+["라면","ramen","ramen","sustantivo"],
+["로션","loción","lotion","sustantivo"],
+["마늘","ajo","garlic","sustantivo"],
+["마르다","seco","dry","adjetivo"],
+["마시다","beber, tomar","drink","verbo"],
+["마음","mente, corazón","mind, feeling","sustantivo"],
+["마지막","último","last","adjetivo"],
+["마치다","terminar","finish","verbo"],
+["막히다","estar bloqueado, congestionado","be blocked","verbo"],
+["만나다","encontrarse","meet","verbo"],
+["만두","dumpling, mandu","dumpling","sustantivo"],
+["만들다","hacer, crear","make, create","verbo"],
+["만지다","tocar","touch","verbo"],
+["만화","cómic, historieta","comic book","sustantivo"],
+["많다","muchos","many","adjetivo"],
+["많이","mucho","a lot of","adverbio"],
+["말","palabra, conversación","word, talk","sustantivo"],
+["말씀","palabras (honorífico)","words (honorific)","sustantivo"],
+["말하다","decir, hablar","say, talk","verbo"],
+["맑다","claro, despejado","clear, clean","adjetivo"],
+["맛","sabor","taste","sustantivo"],
+["맛없다","no delicioso","not delicious","adjetivo"],
+["맛있다","delicioso","delicious","adjetivo"],
+["맞다","correcto, encajar","correct, fit","adjetivo"],
+["맞습니다","así es, correcto","that's right","expresión"],
+["맞아요","así es, correcto","that's right","expresión"],
+["매우","muy","very","adverbio"],
+["매일","todos los días","everyday","adverbio"],
+["매주","cada semana","every week","adverbio"],
+["맥주","cerveza","beer","sustantivo"],
+["맵다","picante","spicy","adjetivo"],
+["머리","cabeza, cabello","head, hair","sustantivo"],
+["먹다","comer","eat","verbo"],
+["먼저","primero","first","adverbio"],
+["멀다","lejos","far","adjetivo"],
+["멋있다","genial, elegante","cool, nice","adjetivo"],
+["메뉴","menú","menu","sustantivo"],
+["메모","memo","memo","sustantivo"],
+["메시지","mensaje","message","sustantivo"],
+["며칠","algunos días, ¿qué fecha?","a few days","sustantivo"],
+["명절","días festivos","holidays","sustantivo"],
+["모두","todos, todo","all, everyone","adverbio"],
+["모레","pasado mañana","day after tomorrow","sustantivo"],
+["모르겠습니다","no sé","I don't know","expresión"],
+["모르다","no saber","not know","verbo"],
+["모양","forma","shape","sustantivo"],
+["모으다","reunir, coleccionar","collect","verbo"],
+["모이다","reunirse","gather","verbo"],
+["모임","reunión","gathering","sustantivo"],
+["모자","sombrero, gorro","hat","sustantivo"],
+["목","cuello, garganta","neck, throat","sustantivo"],
+["목걸이","collar","necklace","sustantivo"],
+["목소리","voz","voice","sustantivo"],
+["목요일","jueves","Thursday","sustantivo"],
+["목욕","baño","bath","sustantivo"],
+["목욕하다","bañarse","take a bath","verbo"],
+["목적","propósito, objetivo","purpose","sustantivo"],
+["몸","cuerpo","body","sustantivo"],
+["못하다","no poder hacer","cannot do","verbo"],
+["무겁다","pesado","heavy","adjetivo"],
+["무료","gratis","free","sustantivo"],
+["무섭다","aterrador","scary","adjetivo"],
+["무슨","qué","what","otro"],
+["무엇","qué","what","otro"],
+["무역","comercio","trade","sustantivo"],
+["무용","danza, baile","dance","sustantivo"],
+["무척","muy","very","adverbio"],
+["문","puerta","door","sustantivo"],
+["문구점","librería, papelería","stationery store","sustantivo"],
+["문장","oración, frase","sentence","sustantivo"],
+["문제","problema","problem","sustantivo"],
+["문화","cultura","culture","sustantivo"],
+["묻다","preguntar","ask","verbo"],
+["물","agua","water","sustantivo"],
+["물건","cosa","thing","sustantivo"],
+["물론","por supuesto","of course","adverbio"],
+["물어보다","preguntar","ask","verbo"],
+["미국","Estados Unidos","United States","sustantivo"],
+["미래","futuro","future","sustantivo"],
+["미리","con anticipación","in advance","adverbio"],
+["미술","arte","art","sustantivo"],
+["미술관","museo de arte","art museum","sustantivo"],
+["미안하다","lo siento","sorry","adjetivo"],
+["미안합니다","lo siento, perdón","I'm sorry","expresión"],
+["미용실","salón de belleza","beauty salon","sustantivo"],
+["밀가루","harina","flour","sustantivo"],
+["바꾸다","cambiar","change","verbo"],
+["바뀌다","ser cambiado","be changed","verbo"],
+["바나나","plátano, banana","banana","sustantivo"],
+["바다","mar","sea","sustantivo"],
+["바닷가","playa","beach","sustantivo"],
+["바라다","esperar, desear","hope","verbo"],
+["바람","viento","wind","sustantivo"],
+["바로","inmediatamente","immediately","adverbio"],
+["바쁘다","ocupado","busy","adjetivo"],
+["바지","pantalón","pants","sustantivo"],
+["박물관","museo","museum","sustantivo"],
+["밖","afuera","outside","sustantivo"],
+["반갑다","encantado de conocer","nice to meet","adjetivo"],
+["반갑습니다","mucho gusto","nice to meet you","expresión"],
+["반지","anillo","ring","sustantivo"],
+["반찬","acompañamiento, guarnición","side dish","sustantivo"],
+["받다","recibir","receive","verbo"],
+["발","pie","foot","sustantivo"],
+["발음","pronunciación","pronunciation","sustantivo"],
+["발표","presentación","presentation","sustantivo"],
+["밝다","brillante, claro","bright","adjetivo"],
+["밤","noche","night","sustantivo"],
+["밥","arroz, comida","rice, meal","sustantivo"],
+["방","habitación","room","sustantivo"],
+["방법","método, manera","method","sustantivo"],
+["방송","transmisión, emisión","broadcast","sustantivo"],
+["방학","vacaciones","vacation","sustantivo"],
+["배","estómago, barco, pera","stomach, ship, pear","sustantivo"],
+["배고프다","hambriento","hungry","adjetivo"],
+["배구","vóleibol","volleyball","sustantivo"],
+["배달","entrega, delivery","delivery","sustantivo"],
+["배부르다","estar lleno","be full","adjetivo"],
+["배우","actor/actriz","actor","sustantivo"],
+["배우다","aprender","learn","verbo"],
+["백화점","tienda por departamentos","department store","sustantivo"],
+["버리다","tirar, desechar","throw away","verbo"],
+["버스","autobús, bus","bus","sustantivo"],
+["번호","número","number","sustantivo"],
+["벌다","ganar dinero","earn money","verbo"],
+["벌써","ya","already","adverbio"],
+["벗다","quitarse","take off","verbo"],
+["벚꽃","flor de cerezo","cherry blossom","sustantivo"],
+["벽","pared","wall","sustantivo"],
+["변호사","abogado","lawyer","sustantivo"],
+["별","estrella","star","sustantivo"],
+["별로","no mucho","not really","adverbio"],
+["병","enfermedad","illness","sustantivo"],
+["병원","hospital","hospital","sustantivo"],
+["보내다","enviar, pasar tiempo","send, spend","verbo"],
+["보다","ver","see","verbo"],
+["보이다","mostrar, verse","show, look","verbo"],
+["보통","normalmente, usualmente","usually","adverbio"],
+["복숭아","durazno, melocotón","peach","sustantivo"],
+["복잡하다","complicado, lleno","complicated","adjetivo"],
+["볶다","sofreír","fry","verbo"],
+["볶음밥","arroz frito","fried rice","sustantivo"],
+["볼펜","bolígrafo","ballpoint pen","sustantivo"],
+["봄","primavera","spring","sustantivo"],
+["부드럽다","suave, amable","soft, friendly","adjetivo"],
+["부르다","llamar, cantar","call, sing","verbo"],
+["부모","padres","parents","sustantivo"],
+["부부","pareja","couple","sustantivo"],
+["부산","Busan (ciudad)","Busan","sustantivo"],
+["부엌","cocina","kitchen","sustantivo"],
+["부지런하다","diligente, trabajador","diligent","adjetivo"],
+["부탁","favor, solicitud","request","sustantivo"],
+["부탁하다","pedir, rogar","ask, beg","verbo"],
+["북쪽","norte","north","sustantivo"],
+["불","fuego, luz","fire, light","sustantivo"],
+["불고기","Bulgogi (carne a la parrilla)","Bulgogi","sustantivo"],
+["불편하다","incómodo, inconveniente","inconvenient","adjetivo"],
+["붙다","pegarse, aprobar","stick, pass test","verbo"],
+["붙이다","pegar, adjuntar","attach","verbo"],
+["비","lluvia","rain","sustantivo"],
+["비누","jabón","soap","sustantivo"],
+["비밀","secreto","secret","sustantivo"],
+["비빔밥","Bibimbap (arroz mixto)","Bibimbap","sustantivo"],
+["비슷하다","similar, parecido","similar","adjetivo"],
+["비싸다","caro","expensive","adjetivo"],
+["비행기","avión","airplane","sustantivo"],
+["빌리다","pedir prestado, prestar","borrow, lend","verbo"],
+["빠르다","rápido","fast","adjetivo"],
+["빨갛다","rojo","red","adjetivo"],
+["빨다","lavar ropa","do laundry","verbo"],
+["빨래","ropa sucia, lavado","laundry","sustantivo"],
+["빨리","rápidamente","quickly","adverbio"],
+["빵","pan","bread","sustantivo"],
+["빵집","panadería","bakery","sustantivo"],
+["사거리","intersección, cruce","intersection","sustantivo"],
+["사계절","cuatro estaciones","four seasons","sustantivo"],
+["사과","manzana","apple","sustantivo"],
+["사다","comprar","buy","verbo"],
+["사람","persona","person","sustantivo"],
+["사랑","amor, amar","love","sustantivo"],
+["사랑하다","amor, amar","love","verbo"],
+["사무실","oficina","office","sustantivo"],
+["사용하다","usar, utilizar","use","verbo"],
+["사진","foto","photo","sustantivo"],
+["산","montaña","mountain","sustantivo"],
+["산책","caminar","walk","sustantivo"],
+["살다","vivir","live","verbo"],
+["삼계탕","Samgyetang (sopa de pollo con ginseng)","Samgyetang","sustantivo"],
+["상자","caja","box","sustantivo"],
+["새","pájaro, nuevo","bird, new","sustantivo"],
+["새벽","madrugada, amanecer","dawn","sustantivo"],
+["색","color","color","sustantivo"],
+["생각","pensamiento","thought","sustantivo"],
+["생각하다","pensar","think","verbo"],
+["생선","pescado","fish","sustantivo"],
+["생일","cumpleaños","birthday","sustantivo"],
+["생활","vida","life","sustantivo"],
+["샤워하다","ducharse","take a shower","verbo"],
+["서다","estar de pie","stand","verbo"],
+["서로","el uno al otro","each other","adverbio"],
+["서비스","servicio","service","sustantivo"],
+["서울","Seúl","Seoul","sustantivo"],
+["서점","librería","bookstore","sustantivo"],
+["선물","regalo","gift","sustantivo"],
+["선생님","profesor/a","teacher","sustantivo"],
+["설거지","lavar los platos","washing dishes","sustantivo"],
+["설날","Año Nuevo Lunar","Lunar New Year","sustantivo"],
+["설탕","azúcar","sugar","sustantivo"],
+["성격","personalidad, carácter","personality","sustantivo"],
+["세계","mundo","world","sustantivo"],
+["세수하다","lavarse la cara","wash face","verbo"],
+["세탁기","lavadora","washing machine","sustantivo"],
+["세탁소","lavandería","laundromat","sustantivo"],
+["소개","presentación, introducción","introduction","sustantivo"],
+["소개하다","presentar","introduce","verbo"],
+["소고기","carne de res","beef","sustantivo"],
+["소금","sal","salt","sustantivo"],
+["소리","sonido, voz","sound, voice","sustantivo"],
+["소설","novela","novel","sustantivo"],
+["소파","sofá","sofa","sustantivo"],
+["소풍","excursión, picnic","picnic","sustantivo"],
+["속","interior, dentro","inside","sustantivo"],
+["손","mano","hand","sustantivo"],
+["손가락","dedo","finger","sustantivo"],
+["손님","cliente","customer","sustantivo"],
+["쇼핑","compras","shopping","sustantivo"],
+["수건","toalla","towel","sustantivo"],
+["수박","sandía","watermelon","sustantivo"],
+["수업","clase","class, lesson","sustantivo"],
+["수영","natación","swimming","sustantivo"],
+["수영장","piscina","swimming pool","sustantivo"],
+["수요일","miércoles","Wednesday","sustantivo"],
+["숙제","tarea","homework","sustantivo"],
+["숟가락","cuchara","spoon","sustantivo"],
+["술","alcohol, licor","alcohol","sustantivo"],
+["쉬다","descansar","rest","verbo"],
+["쉽다","fácil","easy","adjetivo"],
+["슈퍼마켓","supermercado","supermarket","sustantivo"],
+["스트레스","estrés","stress","sustantivo"],
+["스포츠","deporte","sport","sustantivo"],
+["슬프다","triste","sad","adjetivo"],
+["습관","hábito","habit","sustantivo"],
+["시간","momento, cuando","time","sustantivo"],
+["시간표","horario","timetable","sustantivo"],
+["시계","reloj","clock","sustantivo"],
+["시골","campo, zona rural","countryside","sustantivo"],
+["시끄럽다","ruidoso","noisy","adjetivo"],
+["시내","centro de la ciudad","downtown","sustantivo"],
+["시원하다","fresco, refrescante","cool, refreshing","adjetivo"],
+["시작","comienzo, inicio","start","sustantivo"],
+["시작하다","comenzar, empezar","start, begin","verbo"],
+["시장","mercado","market","sustantivo"],
+["시청","municipalidad","city hall","sustantivo"],
+["시키다","ordenar, pedir","order","verbo"],
+["시험","examen","exam","sustantivo"],
+["식당","restaurante","restaurant","sustantivo"],
+["식사","comida, almuerzo","meal","sustantivo"],
+["식탁","mesa","table","sustantivo"],
+["신문","periódico","newspaper","sustantivo"],
+["신발","zapatos","shoes","sustantivo"],
+["신청하다","solicitar, inscribirse","apply for","verbo"],
+["실수","error","mistake","sustantivo"],
+["싫다","odiar","hate","adjetivo"],
+["싫어하다","no gustar","dislike","verbo"],
+["심하다","grave, severo","severe","adjetivo"],
+["싸다","barato","cheap","adjetivo"],
+["싸우다","pelear","fight","verbo"],
+["쌀","arroz (crudo)","rice","sustantivo"],
+["씻다","lavar","wash","verbo"],
+["아기","bebé","baby","sustantivo"],
+["아까","antes, hace un momento","earlier","adverbio"],
+["아내","esposa","wife","sustantivo"],
+["아니다","no","no","expresión"],
+["아니요","no","no","expresión"],
+["아들","hijo","son","sustantivo"],
+["아래","abajo, debajo","below","sustantivo"],
+["아름답다","hermoso","beautiful","adjetivo"],
+["아마","quizás, tal vez","maybe","adverbio"],
+["아버지","padre","father","sustantivo"],
+["아이","niño","child","sustantivo"],
+["아이스크림","helado","ice cream","sustantivo"],
+["아저씨","señor, tío","uncle, mister","sustantivo"],
+["아주","muy","very","adverbio"],
+["아주머니","señora, tía","old lady, aunt","sustantivo"],
+["아직","todavía","yet, still","adverbio"],
+["아침","mañana, desayuno","morning, breakfast","sustantivo"],
+["아파트","apartamento","apartment","sustantivo"],
+["아프다","doloroso, enfermo","painful, sick","adjetivo"],
+["악기","instrumento musical","musical instrument","sustantivo"],
+["안","adentro, no","within, not","sustantivo"],
+["안경","anteojos, lentes","glasses","sustantivo"],
+["안녕하세요","hola","hello","expresión"],
+["안녕하십니까","hola (formal)","hello (formal)","expresión"],
+["안다","abrazar","embrace","verbo"],
+["안전하다","seguro","safe","adjetivo"],
+["앉다","sentarse","sit","verbo"],
+["알다","saber, conocer","know","verbo"],
+["알리다","informar","inform","verbo"],
+["앞","frente, adelante","front","sustantivo"],
+["야구","béisbol","baseball","sustantivo"],
+["야채","verdura","vegetable","sustantivo"],
+["약","medicina","medicine","sustantivo"],
+["약간","un poco","a little","adverbio"],
+["약국","farmacia","pharmacy","sustantivo"],
+["약사","farmacéutico","pharmacist","sustantivo"],
+["약속","cita, promesa","appointment, promise","sustantivo"],
+["양말","calcetines, medias","socks","sustantivo"],
+["양복","traje","suit","sustantivo"],
+["양파","cebolla","onion","sustantivo"],
+["어깨","hombro","shoulder","sustantivo"],
+["어둡다","oscuro","dark","adjetivo"],
+["어디","dónde","where","adverbio"],
+["어떻게","cómo","how","adverbio"],
+["어렵다","difícil","difficult","adjetivo"],
+["어른","adulto","adult","sustantivo"],
+["어리다","joven","young","adjetivo"],
+["어린이","niño","child","sustantivo"],
+["어머니","madre","mother","sustantivo"],
+["어서","rápido, apúrese","hurry","adverbio"],
+["어울리다","quedar bien, combinar","look good on","verbo"],
+["어제","ayer","yesterday","sustantivo"],
+["언니","hermana mayor","older sister","sustantivo"],
+["언제","cuándo","when","adverbio"],
+["언제나","siempre","always","adverbio"],
+["얼굴","cara","face","sustantivo"],
+["얼마나","cuánto","how much","adverbio"],
+["얼음","hielo","ice","sustantivo"],
+["없다","no tener","not have","adjetivo"],
+["에어컨","aire acondicionado","air conditioner","sustantivo"],
+["엘리베이터","ascensor","elevator","sustantivo"],
+["여권","pasaporte","passport","sustantivo"],
+["여기","aquí","here","adverbio"],
+["여동생","hermana menor","younger sister","sustantivo"],
+["여러","varios, diverso","various","adjetivo"],
+["여름","verano","summer","sustantivo"],
+["여자","mujer","woman","sustantivo"],
+["여행","viaje, viajar","travel","sustantivo"],
+["여행사","agencia de viajes","travel agency","sustantivo"],
+["역","estación","station","sustantivo"],
+["역사","historia","history","sustantivo"],
+["연락처","datos de contacto","contact information","sustantivo"],
+["연습","práctica, practicar","practice","sustantivo"],
+["연습하다","práctica, practicar","practice","verbo"],
+["연필","lápiz","pencil","sustantivo"],
+["열다","abrir","open","verbo"],
+["열쇠","llave","key","sustantivo"],
+["열심히","con esfuerzo, con empeño","hard, enthusiastically","adverbio"],
+["엽서","postal","postcard","sustantivo"],
+["영국","Reino Unido","United Kingdom","sustantivo"],
+["영어","inglés","English","sustantivo"],
+["영화","película","movie","sustantivo"],
+["영화관","cine","movie theater","sustantivo"],
+["옆","lado","side","sustantivo"],
+["예쁘다","bonita, hermosa","pretty, beautiful","adjetivo"],
+["예약","reserva","reservation","sustantivo"],
+["오다","venir","come","verbo"],
+["오래","mucho tiempo","long, much","adverbio"],
+["오랜만에","después de mucho tiempo","after a long time","expresión"],
+["오랜만입니다","cuánto tiempo","long time no see","expresión"],
+["오른쪽","lado derecho","right side","sustantivo"],
+["오빠","hermano mayor","older brother","sustantivo"],
+["오전","mañana (a.m.)","morning, a.m.","sustantivo"],
+["오후","tarde","afternoon","sustantivo"],
+["올해","este año","this year","sustantivo"],
+["옮기다","mover, transferir","move, transfer","verbo"],
+["옷","ropa","clothes","sustantivo"],
+["옷가게","tienda de ropa","clothing store","sustantivo"],
+["왜","por qué","why","adverbio"],
+["왜냐하면","porque","because","adverbio"],
+["외국","país extranjero","foreign country","sustantivo"],
+["외국어","idioma extranjero","foreign language","sustantivo"],
+["외국인","extranjero","foreigner","sustantivo"],
+["외롭다","solitario","lonely","adjetivo"],
+["외출하다","salir","go out","verbo"],
+["왼쪽","izquierda","left","sustantivo"],
+["요금","tarifa, precio","fee","sustantivo"],
+["요리","cocina, cocinar","cooking","sustantivo"],
+["요즘","hoy en día, últimamente","nowadays","adverbio"],
+["우리","nosotros","we, us","sustantivo"],
+["우산","paraguas","umbrella","sustantivo"],
+["우유","leche","milk","sustantivo"],
+["우체국","oficina de correos","post office","sustantivo"],
+["운동","ejercicio, hacer ejercicio","exercise","sustantivo"],
+["운동하다","ejercicio, hacer ejercicio","exercise","verbo"],
+["운전하다","manejar, conducir","drive","verbo"],
+["울다","llorar","cry","verbo"],
+["움직이다","moverse","move","verbo"],
+["웃다","reír","laugh","verbo"],
+["원","won (moneda coreana)","won (currency)","sustantivo"],
+["원하다","querer, desear","want, wish","verbo"],
+["월요일","lunes","Monday","sustantivo"],
+["월급","sueldo mensual","monthly salary","sustantivo"],
+["위험하다","peligroso","dangerous","adjetivo"],
+["유명하다","famoso","famous","adjetivo"],
+["유학","estudiar en el extranjero","study abroad","sustantivo"],
+["유학생","estudiante internacional","international student","sustantivo"],
+["음료수","bebida","drink, soft drink","sustantivo"],
+["음식","comida","food","sustantivo"],
+["음악","música","music","sustantivo"],
+["의사","médico, doctor","doctor","sustantivo"],
+["의자","silla","chair","sustantivo"],
+["이름","nombre","name","sustantivo"],
+["이메일","correo electrónico","e-mail","sustantivo"],
+["이모","tía materna","maternal aunt","sustantivo"],
+["이번","esta vez","this time","sustantivo"],
+["이사","mudanza","moving","sustantivo"],
+["이야기","historia, cuento","story","sustantivo"],
+["이야기하다","hablar, conversar","talk","verbo"],
+["이용하다","usar, utilizar","use","verbo"],
+["이유","razón, motivo","reason","sustantivo"],
+["이제","ahora","now","adverbio"],
+["이해하다","entender, comprender","understand","verbo"],
+["인기","popularidad","popularity","sustantivo"],
+["인사","saludo","greetings","sustantivo"],
+["인사하다","saludar","greet","verbo"],
+["인터넷","internet","internet","sustantivo"],
+["일","trabajo, día","work, day","sustantivo"],
+["일기","diario","diary","sustantivo"],
+["일기예보","pronóstico del tiempo","weather forecast","sustantivo"],
+["일어나다","levantarse, ocurrir","rise, occur","verbo"],
+["일요일","domingo","Sunday","sustantivo"],
+["일주일","una semana","one week","sustantivo"],
+["일찍","temprano","early","adverbio"],
+["일하다","trabajar","work","verbo"],
+["읽기","lectura","reading","sustantivo"],
+["읽다","leer","read","verbo"],
+["잃어버리다","perder","lose","verbo"],
+["입다","ponerse, usar","wear","verbo"],
+["있다","tener, existir","have, exist","verbo"],
+["잊다","olvidar","forget","verbo"],
+["자다","dormir","sleep","verbo"],
+["자동차","auto, carro","car","sustantivo"],
+["자료","material","material","sustantivo"],
+["자리","asiento, lugar","seat","sustantivo"],
+["자연","naturaleza","nature","sustantivo"],
+["자유","libertad","freedom","sustantivo"],
+["자전거","bicicleta","bicycle","sustantivo"],
+["자주","a menudo, seguido","often","adverbio"],
+["작년","el año pasado","last year","sustantivo"],
+["작다","pequeño","small","adjetivo"],
+["잔치","fiesta, banquete","party, feast","sustantivo"],
+["잘","bien","well","adverbio"],
+["잘못","error","mistake","sustantivo"],
+["잘생기다","guapo","handsome","adjetivo"],
+["잘하다","hacer bien","do well","verbo"],
+["잠","dormir","sleep","sustantivo"],
+["잠깐","un momento","for a while","adverbio"],
+["잠자다","dormir","sleep","verbo"],
+["잡다","agarrar, sostener","catch, hold","verbo"],
+["잡지","revista","magazine","sustantivo"],
+["장갑","guantes","gloves","sustantivo"],
+["장마","temporada de lluvias","rainy season","sustantivo"],
+["장소","lugar","place","sustantivo"],
+["재미없다","aburrido, sin gracia","uninteresting","adjetivo"],
+["재미있다","interesante","interesting","adjetivo"],
+["저녁","cena, tarde","dinner, evening","sustantivo"],
+["전공","especialidad, carrera","major","sustantivo"],
+["전화","teléfono","telephone","sustantivo"],
+["전화번호","número de teléfono","phone number","sustantivo"],
+["정거장","estación","station","sustantivo"],
+["정류장","bus stop","bus stop","sustantivo"],
+["정리하다","ordenar, organizar","organize","verbo"],
+["정말","de verdad, realmente","really","adverbio"],
+["정보","información","information","sustantivo"],
+["정하다","elegir, establecer","choose, establish","verbo"],
+["제목","título","title","sustantivo"],
+["조금","un poco","a little","adverbio"],
+["조용하다","tranquilo, silencioso","quiet","adjetivo"],
+["조용히","tranquilamente","quietly","adverbio"],
+["졸업","graduación","graduation","sustantivo"],
+["졸업하다","graduarse","graduate","verbo"],
+["좀","un poco","a little","adverbio"],
+["좁다","estrecho, angosto","narrow","adjetivo"],
+["종류","tipo, clase","type, kind","sustantivo"],
+["종이","papel","paper","sustantivo"],
+["좋다","bueno","good","adjetivo"],
+["좋아하다","gustar","like","verbo"],
+["죄송하다","lo siento","sorry","adjetivo"],
+["주다","dar","give","verbo"],
+["주말","fin de semana","weekend","sustantivo"],
+["주무시다","dormir (honorífico)","sleep (honorific)","verbo"],
+["주문하다","ordenar, pedir","order","verbo"],
+["주소","dirección","address","sustantivo"],
+["주스","jugo","juice","sustantivo"],
+["주인","dueño","owner","sustantivo"],
+["주차장","estacionamiento","parking lot","sustantivo"],
+["죽다","morir","die","verbo"],
+["준비","preparación","preparation","sustantivo"],
+["준비하다","preparar","prepare","verbo"],
+["중요하다","importante","important","adjetivo"],
+["중학교","escuela secundaria","middle school","sustantivo"],
+["즐겁다","divertido, agradable","fun, pleasant","adjetivo"],
+["즐기다","disfrutar","enjoy","verbo"],
+["지각","llegada tarde","being late","sustantivo"],
+["지갑","billetera","wallet","sustantivo"],
+["지금","ahora","now","adverbio"],
+["지나다","pasar","pass by","verbo"],
+["지난주","la semana pasada","last week","sustantivo"],
+["지내다","quedarse, pasar tiempo","stay, spend","verbo"],
+["지다","perder","lose","verbo"],
+["지도","mapa","map","sustantivo"],
+["지우개","goma de borrar","eraser","sustantivo"],
+["지키다","proteger","protect","verbo"],
+["지하철","metro, subte","subway","sustantivo"],
+["직업","trabajo, profesión","job, profession","sustantivo"],
+["직원","empleado","employee","sustantivo"],
+["직접","directamente","directly","adverbio"],
+["질문","pregunta","question","sustantivo"],
+["질문하다","hacer una pregunta","ask a question","verbo"],
+["집","casa","house","sustantivo"],
+["짜다","salado","salty","adjetivo"],
+["짧다","corto","short","adjetivo"],
+["찌개","estofado","stew","sustantivo"],
+["찍다","tomar foto","take a photo","verbo"],
+["차","auto, té","car, tea","sustantivo"],
+["차갑다","frío","cold","adjetivo"],
+["착하다","bueno, amable","good, friendly","adjetivo"],
+["참","really, very","really, very","adverbio"],
+["창문","ventana","window","sustantivo"],
+["찾다","encontrar, visitar","find, visit","verbo"],
+["채소","verdura","vegetable","sustantivo"],
+["책","libro","book","sustantivo"],
+["책상","escritorio","desk","sustantivo"],
+["책임","responsabilidad","responsibility","sustantivo"],
+["처음","primera vez","first time","sustantivo"],
+["처음 뵙겠습니다","mucho gusto","nice to meet you","expresión"],
+["천천히","lentamente","slowly","adverbio"],
+["청바지","jeans","blue jeans","sustantivo"],
+["청소기","aspiradora","vacuum cleaner","sustantivo"],
+["청소하다","limpio","clean","verbo"],
+["초대하다","invitar","invite","verbo"],
+["초등학교","escuela primaria","elementary school","sustantivo"],
+["최고","mejor, el mejor","best","sustantivo"],
+["추다","danza, baile","dance","verbo"],
+["추석","Chuseok (Día de Acción de Gracias coreano)","Korean Thanksgiving","sustantivo"],
+["축구","fútbol","soccer","sustantivo"],
+["축제","festival","festival","sustantivo"],
+["축하하다","celebrar","celebrate","verbo"],
+["축하합니다","felicitaciones","congratulations","expresión"],
+["출구","salida","exit","sustantivo"],
+["출근하다","ir al trabajo","go to work","verbo"],
+["출발하다","partir, salir","depart","verbo"],
+["춥다","frío","cold","adjetivo"],
+["취미","pasatiempo, hobby","hobby","sustantivo"],
+["취소하다","cancelar","cancel","verbo"],
+["취직하다","conseguir trabajo","get a job","verbo"],
+["치과","dentista","dentist","sustantivo"],
+["치료하다","tratar, curar","treat","verbo"],
+["치마","falda","skirt","sustantivo"],
+["친구","amigo/a","friend","sustantivo"],
+["친절하다","ser amable","be kind","adjetivo"],
+["친척","familiar, pariente","relative","sustantivo"],
+["칠판","pizarrón","blackboard","sustantivo"],
+["침대","cama","bed","sustantivo"],
+["카드","tarjeta","card","sustantivo"],
+["카페","café","cafe","sustantivo"],
+["커피","café","coffee","sustantivo"],
+["컴퓨터","computadora","computer","sustantivo"],
+["켜다","encender","turn on","verbo"],
+["코","nariz","nose","sustantivo"],
+["콜라","Coca-Cola","Coke","sustantivo"],
+["크다","grande","big, large","adjetivo"],
+["타다","subirse, montar","ride, get on","verbo"],
+["태어나다","nacer","be born","verbo"],
+["태풍","tifón","typhoon","sustantivo"],
+["택시","taxi","taxi","sustantivo"],
+["텔레비전","televisión","TV","sustantivo"],
+["토마토","tomate","tomato","sustantivo"],
+["토요일","sábado","Saturday","sustantivo"],
+["통하다","pasar, conectar","pass, lead","verbo"],
+["퇴근하다","salir del trabajo","leave office","verbo"],
+["특히","especialmente","especially","adverbio"],
+["틀다","encender","turn on","verbo"],
+["틀리다","equivocado","wrong","adjetivo"],
+["티셔츠","camiseta","t-shirt","sustantivo"],
+["파티","fiesta","party","sustantivo"],
+["팔다","vender","sell","verbo"],
+["편지","carta","letter","sustantivo"],
+["편하다","cómodo","comfortable","adjetivo"],
+["포도","uva","grape","sustantivo"],
+["표","ticket, boleto","ticket","sustantivo"],
+["피곤하다","cansado","tired","adjetivo"],
+["피우다","fumar","smoke","verbo"],
+["피자","pizza","pizza","sustantivo"],
+["필요하다","necesitar","need","adjetivo"],
+["하다","hacer, decir","do, say","verbo"],
+["하루","un día","one day","sustantivo"],
+["하얗다","blanco","white","adjetivo"],
+["하지만","pero, sin embargo","but, however","adverbio"],
+["학교","escuela, colegio","school","sustantivo"],
+["학기","semestre","semester","sustantivo"],
+["학생","estudiante","student","sustantivo"],
+["한강","Río Han","Han River","sustantivo"],
+["한국","Corea","Korea","sustantivo"],
+["한국어","idioma coreano","Korean language","sustantivo"],
+["한글","Hangul (alfabeto coreano)","Hangul","sustantivo"],
+["한복","Hanbok (ropa tradicional coreana)","Hanbok","sustantivo"],
+["한식","cocina coreana","Korean cuisine","sustantivo"],
+["할머니","abuela","grandmother","sustantivo"],
+["할아버지","abuelo","grandfather","sustantivo"],
+["할인","descuento","discount","sustantivo"],
+["함께","juntos","together","adverbio"],
+["합격","aprobar","pass","sustantivo"],
+["항상","siempre","always","adverbio"],
+["행복","felicidad","happiness","sustantivo"],
+["행복하다","feliz","happy","adjetivo"],
+["허리","cintura","waist","sustantivo"],
+["현금","efectivo","cash","sustantivo"],
+["형","hermano mayor","older brother","sustantivo"],
+["형제","hermano/a","sibling","sustantivo"],
+["호텔","hotel","hotel","sustantivo"],
+["혼자","solo","alone","adverbio"],
+["화요일","martes","Tuesday","sustantivo"],
+["화장실","baño","restroom","sustantivo"],
+["확인하다","confirmar, verificar","confirm, check","verbo"],
+["환영하다","bienvenido","welcome","verbo"],
+["환자","paciente","patient","sustantivo"],
+["회사","empresa, compañía","company","sustantivo"],
+["회사원","empleado","employee","sustantivo"],
+["회의","reunión, conferencia","conference","sustantivo"],
+["횡단보도","cruce peatonal","crosswalk","sustantivo"],
+["휴가","vacaciones","vacation","sustantivo"],
+["휴대전화","celular","cell phone","sustantivo"],
+["휴일","feriado, día libre","holiday","sustantivo"],
+["흐리다","nublado","cloudy","adjetivo"],
+["힘","fuerza, poder","power","sustantivo"],
+["하나","1 (uno)","1 (uno)","número"],
+["둘","2 (dos)","2 (dos)","número"],
+["셋","3 (tres)","3 (tres)","número"],
+["넷","4 (cuatro)","4 (cuatro)","número"],
+["다섯","5 (cinco)","5 (cinco)","número"],
+["여섯","6 (seis)","6 (seis)","número"],
+["일곱","7 (siete)","7 (siete)","número"],
+["여덟","8 (ocho)","8 (ocho)","número"],
+["아홉","9 (nueve)","9 (nueve)","número"],
+["열","10 (diez)","10 (diez)","número"],
+["스물","20 (veinte)","20 (veinte)","número"],
+["서른","30 (treinta)","30 (treinta)","número"],
+["마흔","40 (cuarenta)","40 (cuarenta)","número"],
+["쉰","50 (cincuenta)","50 (cincuenta)","número"],
+["예순","60 (sesenta)","60 (sesenta)","número"],
+["일흔","70 (setenta)","70 (setenta)","número"],
+["여든","80 (ochenta)","80 (ochenta)","número"],
+["아흔","90 (noventa)","90 (noventa)","número"],
+["일","1","1","número"],
+["이","2","2","número"],
+["삼","3","3","número"],
+["사","4","4","número"],
+["오","5","5","número"],
+["육","6","6","número"],
+["칠","7","7","número"],
+["팔","8","8","número"],
+["구","9","9","número"],
+["십","10","10","número"],
+["백","100","100","número"],
+["천","1000","1000","número"],
+["삼십","30","30","número"],
+["사십","40","40","número"],
+["오십","50","50","número"],
+["육십","60","60","número"],
+["칠십","70","70","número"],
+["팔십","80","80","número"]
+];
+
+let allWords = rawData.map(([k,es,en,cat],i) => ({id:i,korean:k,es,en,cat}));
+let filtered = [...allWords];
+let deck = [...filtered];
+let currentIdx = 0;
+let currentCat = 'todas';
+let currentMode = 'flashcard';
+let searchTerm = '';
+let quizCorrect = 0, quizWrong = 0, quizAnswered = false;
+let quizWords = [], quizCurrent = 0;
+
+function catClass(c){return 'cat-'+(c||'otro');}
+
+function updateCard(){
+  if(!deck.length)return;
+  const w=deck[currentIdx];
+  document.getElementById('card-inner').classList.remove('flipped');
+  document.getElementById('card-num').textContent='#'+(w.id+1);
+  document.getElementById('card-korean').textContent=w.korean;
+  document.getElementById('card-translation-es').textContent=w.es;
+  document.getElementById('card-translation-en').textContent='('+w.en+')';
+  const cat=document.getElementById('card-category');
+  cat.textContent=w.cat; cat.className='category-badge '+catClass(w.cat);
+  document.getElementById('card-counter').textContent=(currentIdx+1)+' / '+deck.length;
+  document.getElementById('progress-fill').style.width=((currentIdx+1)/deck.length*100)+'%';
+}
+
+function flipCard(){document.getElementById('card-inner').classList.toggle('flipped');}
+function nextCard(){if(currentIdx<deck.length-1){currentIdx++;updateCard();}}
+function prevCard(){if(currentIdx>0){currentIdx--;updateCard();}}
+function shuffleDeck(){
+  for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
+  currentIdx=0;updateCard();
+}
+
+function renderGrid(){
+  const grid=document.getElementById('vocab-grid');
+  const words=getFiltered();
+  if(!words.length){grid.innerHTML='<div class="empty-state">No se encontraron palabras.</div>';return;}
+  grid.innerHTML=words.map(w=>`<div class="vocab-card">
+    <div class="korean">${w.korean}</div>
+    <div class="eng-es">${w.es}</div>
+    <div class="eng-en">(${w.en})</div>
+    <div class="cat ${catClass(w.cat)}">${w.cat}</div>
+  </div>`).join('');
+}
+
+function startQuiz(){
+  quizWords=getFiltered().sort(()=>Math.random()-0.5);
+  quizCurrent=0;quizCorrect=0;quizWrong=0;
+  updateQuizCounters();renderQuizQuestion();
+}
+
+function renderQuizQuestion(){
+  if(!quizWords.length)return;
+  const w=quizWords[quizCurrent%quizWords.length];
+  document.getElementById('quiz-q').textContent=w.korean;
+  quizAnswered=false;
+  document.getElementById('quiz-next-btn').style.display='none';
+  const pool=allWords.filter(x=>x.id!==w.id).sort(()=>Math.random()-0.5).slice(0,3);
+  const opts=[...pool,w].sort(()=>Math.random()-0.5);
+  document.getElementById('quiz-opts').innerHTML=opts.map(o=>`
+    <button class="quiz-opt" onclick="checkAnswer(this,${o.id},${w.id})">
+      <span class="opt-es">${o.es}</span>
+      <span class="opt-en">(${o.en})</span>
+    </button>`).join('');
+}
+
+function checkAnswer(btn,selectedId,correctId){
+  if(quizAnswered)return;
+  quizAnswered=true;
+  document.querySelectorAll('.quiz-opt').forEach(b=>{b.disabled=true;});
+  const btns=[...document.querySelectorAll('.quiz-opt')];
+  const correctBtn=btns.find((_,i)=>{
+    const oid=parseInt(document.querySelectorAll('.quiz-opt')[i]?.getAttribute('data-id'));
+    return false;
+  });
+  // mark by comparing to correct word
+  btns.forEach(b=>{
+    const es=b.querySelector('.opt-es').textContent;
+    const correctWord=allWords.find(x=>x.id===correctId);
+    if(es===correctWord.es) b.classList.add('correct');
+  });
+  if(selectedId===correctId){quizCorrect++;}
+  else{btn.classList.add('wrong');quizWrong++;}
+  updateQuizCounters();
+  document.getElementById('quiz-next-btn').style.display='block';
+}
+
+function nextQuiz(){
+  quizCurrent++;
+  if(quizCurrent>=quizWords.length){quizWords=getFiltered().sort(()=>Math.random()-0.5);quizCurrent=0;}
+  renderQuizQuestion();
+}
+
+function updateQuizCounters(){
+  document.getElementById('qc').textContent=quizCorrect;
+  document.getElementById('qw').textContent=quizWrong;
+  document.getElementById('q-correct').textContent=quizCorrect;
+  document.getElementById('q-wrong').textContent=quizWrong;
+}
+
+function getFiltered(){
+  return allWords.filter(w=>{
+    const mc=currentCat==='todas'||w.cat===currentCat;
+    const ms=!searchTerm||w.korean.includes(searchTerm)||w.es.toLowerCase().includes(searchTerm.toLowerCase())||w.en.toLowerCase().includes(searchTerm.toLowerCase());
+    return mc&&ms;
+  });
+}
+
+function setCategory(cat,el){
+  currentCat=cat;
+  document.querySelectorAll('.tag').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  applyFilters();
+}
+
+function handleSearch(){searchTerm=document.getElementById('search').value.trim();applyFilters();}
+
+function applyFilters(){
+  filtered=getFiltered();
+  document.getElementById('count-display').textContent=filtered.length;
+  deck=[...filtered];currentIdx=0;
+  if(currentMode==='flashcard')updateCard();
+  else if(currentMode==='grid')renderGrid();
+  else if(currentMode==='quiz')startQuiz();
+}
+
+function setMode(mode,el){
+  currentMode=mode;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('flashcard-mode').style.display=mode==='flashcard'?'flex':'none';
+  document.getElementById('grid-mode').style.display=mode==='grid'?'block':'none';
+  document.getElementById('quiz-mode').style.display=mode==='quiz'?'flex':'none';
+  document.getElementById('quiz-stats-bar').style.display=mode==='quiz'?'block':'none';
+  if(mode==='grid')renderGrid();
+  if(mode==='quiz')startQuiz();
+  if(mode==='flashcard')updateCard();
+}
+
+document.addEventListener('keydown',e=>{
+  if(currentMode==='flashcard'){
+    if(e.key==='ArrowRight')nextCard();
+    if(e.key==='ArrowLeft')prevCard();
+    if(e.key===' '){e.preventDefault();flipCard();}
+  }
+});
+
+updateCard();
+</script>
+</body>
+</html>
