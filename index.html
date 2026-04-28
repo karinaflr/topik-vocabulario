@@ -1499,12 +1499,11 @@ function updateCard(){
 function flipCard(){document.getElementById('card-inner').classList.toggle('flipped');}
 function nextCard(){if(currentIdx<deck.length-1){currentIdx++;updateCard();
 updateLearnedCounters();
-loadExerciseBank();
-// pre-warm dynamic pipeline after 2s
+// Pre-warm: start fetching first exercise immediately
 setTimeout(() => {
   const s=[...allWords].sort(()=>Math.random()-0.5).slice(0,6).map(w=>`${w.korean}(${w.es})`).join(', ');
-  prefetchDynamic('random', s);
-}, 2000);}}
+  prefetchNext('random', s);
+}, 500);}}
 function prevCard(){if(currentIdx>0){currentIdx--;updateCard();}}
 function shuffleDeck(){
   for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
@@ -1695,141 +1694,84 @@ function getRandomExType() {
 }
 
 // ── EXERCISE BANK ──
-let exerciseBank = [];        // loaded from exercises.json
-let bankByType = {};          // indexed by type
-let bankUsed = new Set();     // track used indices to avoid repeats
-let nextExercise = null;      // pre-fetched dynamic exercise
-let prefetching = false;
-
-async function loadExerciseBank() {
-  try {
-    const res = await fetch('exercises.json');
-    if (!res.ok) return;
-    exerciseBank = await res.json();
-    // index by type
-    exerciseBank.forEach((ex, i) => {
-      if (!bankByType[ex.type]) bankByType[ex.type] = [];
-      bankByType[ex.type].push(i);
-    });
-    console.log(`Bank loaded: ${exerciseBank.length} exercises`);
-  } catch(e) {
-    console.log('No exercise bank found, using dynamic only');
-  }
-}
-
-function getFromBank(type) {
-  const pool = type === 'random'
-    ? exerciseBank.map((_,i) => i)
-    : (bankByType[type] || []);
-  const unused = pool.filter(i => !bankUsed.has(i));
-  const candidates = unused.length > 0 ? unused : pool; // reset if exhausted
-  if (!candidates.length) return null;
-  const idx = candidates[Math.floor(Math.random() * candidates.length)];
-  bankUsed.add(idx);
-  if (bankUsed.size > exerciseBank.length * 0.8) bankUsed.clear(); // reset at 80%
-  return exerciseBank[idx];
-}
-
-async function prefetchDynamic(type, wordList) {
-  if (prefetching) return;
-  prefetching = true;
-  try {
-    const prompts = buildPrompts(wordList);
-    const t = type === 'random' ? getRandomExType() : type;
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 700,
-        messages: [{ role: 'user', content: prompts[t] }]
-      })
-    });
-    const data = await response.json();
-    const raw = data.content.find(b => b.type === 'text')?.text || '';
-    const clean = raw.replace(/```json|```/g, '').trim();
-    const start = clean.indexOf('{'); const end = clean.lastIndexOf('}') + 1;
-    const ex = JSON.parse(clean.slice(start, end));
-    ex.type = t;
-    nextExercise = ex;
-  } catch(e) {
-    nextExercise = null;
-  }
-  prefetching = false;
-}
+// ── PRE-FETCH SYSTEM ──
+let nextExercise = null;   // pre-fetched and ready to show
+let prefetching = false;   // guard against concurrent fetches
+let exerciseQueue = [];    // buffer up to 2 ahead
 
 function buildPrompts(wordList) {
   return {
-    topic: `Crea ejercicio TOPIK I 화제 고르기. 2 oraciones, 4 opciones de 1 palabra. Contexto: ${wordList}. JSON sin markdown: {"type":"topic","instruction":"무엇에 대한 이야기입니까?","prompt":"oración1. oración2.","options":["단어1","단어2","단어3","단어4"],"correct":0,"explanation":"explicación"}`,
-    fill: `Crea ejercicio TOPIK I 빈칸 채우기. Oración con ( ). 4 opciones. Contexto: ${wordList}. JSON sin markdown: {"type":"fill","instruction":"<보기>와 같이 ( )에 들어갈 가장 알맞은 것을 고르십시오.","prompt":"oración con ( ).","options":["op1","op2","op3","op4"],"correct":0,"explanation":"explicación"}`,
-    dialogue: `Crea ejercicio TOPIK I 대화 완성. Diálogo 가/나. Contexto: ${wordList}. JSON sin markdown: {"type":"dialogue","instruction":"다음을 듣고 <보기>와 같이 물음에 맞는 대답을 고르십시오.","prompt":"가: [pregunta]\n나: ___","options":["op1","op2","op3","op4"],"correct":0,"explanation":"explicación"}`,
-    place: `Crea ejercicio TOPIK I 장소 찾기. Diálogo con pistas del lugar. Contexto: ${wordList}. JSON sin markdown: {"type":"place","instruction":"여기는 어디입니까?","prompt":"가: [línea1]\n나: [línea2]","options":["장소1","장소2","장소3","장소4"],"correct":0,"explanation":"explicación"}`,
-    match: `Crea ejercicio TOPIK I 내용과 같은 것 고르기. Párrafo 3-4 oraciones. Contexto: ${wordList}. JSON sin markdown: {"type":"match","instruction":"다음을 읽고 내용과 같은 것을 고르십시오.","prompt":"párrafo","options":["op1","op2","op3","op4"],"correct":0,"explanation":"explicación"}`,
-    insert: `Crea ejercicio TOPIK I 문장 넣기. Párrafo con (㉠)(㉡)(㉢)(㉣). Contexto: ${wordList}. JSON sin markdown: {"type":"insert","instruction":"다음 문장이 들어갈 곳으로 가장 알맞은 것을 고르십시오.","prompt":"párrafo con (㉠)(㉡)(㉢)(㉣)","sentence":"oración","options":["①㉠","②㉡","③㉢","④㉣"],"correct":1,"explanation":"explicación"}`,
-    passage: `Crea ejercicio TOPIK I 지문 읽기 con 2 preguntas. Párrafo con (㉠). Contexto: ${wordList}. JSON sin markdown: {"type":"passage","instruction":"다음을 읽고 물음에 답하십시오.","prompt":"párrafo con (㉠)","q1":{"question":"㉠에 들어갈 말로 가장 알맞은 것을 고르십시오.","options":["op1","op2","op3","op4"],"correct":0},"q2":{"question":"윗글의 내용과 같은 것을 고르십시오.","options":["op1","op2","op3","op4"],"correct":2},"explanation":"explicación"}`,
+    topic:    `Crea ejercicio TOPIK I 화제 고르기. 2 oraciones cortas en coreano sobre mismo tema. 4 opciones de UNA palabra. Contexto: ${wordList}. JSON sin markdown: {"type":"topic","instruction":"무엇에 대한 이야기입니까?","prompt":"oración1. oración2.","options":["단어1","단어2","단어3","단어4"],"correct":0,"explanation":"explicación en español"}`,
+    fill:     `Crea ejercicio TOPIK I 빈칸 채우기. Oración en coreano con ( ) donde falta palabra clave. 4 opciones. Contexto: ${wordList}. JSON sin markdown: {"type":"fill","instruction":"<보기>와 같이 ( )에 들어갈 가장 알맞은 것을 고르십시오.","prompt":"oración con ( ).","options":["op1","op2","op3","op4"],"correct":0,"explanation":"explicación en español"}`,
+    dialogue: `Crea ejercicio TOPIK I 대화 완성. Diálogo 가/나, respuesta de 나 en blanco. 4 opciones. Contexto: ${wordList}. JSON sin markdown: {"type":"dialogue","instruction":"다음을 듣고 <보기>와 같이 물음에 맞는 대답을 고르십시오.","prompt":"가: [pregunta]\n나: ___","options":["op1","op2","op3","op4"],"correct":0,"explanation":"explicación en español"}`,
+    place:    `Crea ejercicio TOPIK I 장소 찾기. Diálogo 가/나 con pistas implícitas de lugar. 4 opciones de lugares en coreano. Contexto: ${wordList}. JSON sin markdown: {"type":"place","instruction":"여기는 어디입니까?","prompt":"가: [línea1]\n나: [línea2]","options":["장소1","장소2","장소3","장소4"],"correct":0,"explanation":"explicación en español de qué palabras revelan el lugar"}`,
+    match:    `Crea ejercicio TOPIK I 내용과 같은 것. Párrafo 3-4 oraciones en coreano. 4 opciones: solo una coincide. Contexto: ${wordList}. JSON sin markdown: {"type":"match","instruction":"다음을 읽고 내용과 같은 것을 고르십시오.","prompt":"párrafo","options":["op1","op2","op3","op4"],"correct":0,"explanation":"explicación en español"}`,
+    insert:   `Crea ejercicio TOPIK I 문장 넣기. Párrafo con (㉠)(㉡)(㉢)(㉣). Oración para insertar. Contexto: ${wordList}. JSON sin markdown: {"type":"insert","instruction":"다음 문장이 들어갈 곳으로 가장 알맞은 것을 고르십시오.","prompt":"párrafo con (㉠)(㉡)(㉢)(㉣)","sentence":"oración","options":["①㉠","②㉡","③㉢","④㉣"],"correct":1,"explanation":"explicación en español"}`,
+    passage:  `Crea ejercicio TOPIK I 지문 읽기 con 2 preguntas. Párrafo 5-6 oraciones con (㉠). Contexto: ${wordList}. JSON sin markdown: {"type":"passage","instruction":"다음을 읽고 물음에 답하십시오.","prompt":"párrafo con (㉠)","q1":{"question":"㉠에 들어갈 말로 가장 알맞은 것을 고르십시오.","options":["op1","op2","op3","op4"],"correct":0},"q2":{"question":"윗글의 내용과 같은 것을 고르십시오.","options":["op1","op2","op3","op4"],"correct":2},"explanation":"explicación en español de ambas"}`,
   };
 }
 
-// use_dynamic toggles whether we prefer dynamic or static this round
-let dynamicCounter = 0;
+function sampleWordList() {
+  return [...allWords].sort(() => Math.random()-0.5).slice(0,6).map(w => `${w.korean}(${w.es})`).join(', ');
+}
+
+async function fetchOne(type) {
+  const t = (type === 'random') ? getRandomExType() : type;
+  const prompts = buildPrompts(sampleWordList());
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 700,
+      messages: [{ role: 'user', content: prompts[t] }]
+    })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  const raw = data.content.find(b => b.type === 'text')?.text || '';
+  const clean = raw.replace(/```json|```/g, '').trim();
+  const s = clean.indexOf('{'), e = clean.lastIndexOf('}') + 1;
+  const ex = JSON.parse(clean.slice(s, e));
+  ex.type = t;
+  return ex;
+}
+
+async function prefetchNext(type, _wordList) {
+  if (prefetching || exerciseQueue.length >= 2) return;
+  prefetching = true;
+  try {
+    const ex = await fetchOne(type);
+    exerciseQueue.push(ex);
+  } catch(e) { /* silent */ }
+  prefetching = false;
+  // keep queue topped up
+  if (exerciseQueue.length < 2) {
+    setTimeout(() => prefetchNext(type, null), 300);
+  }
+}
 
 async function generateExercise() {
   const card = document.getElementById('exercise-card');
   const type = exType === 'random' ? getRandomExType() : exType;
   const typeLabel = EX_TYPES[type] || type;
 
-  const sample = [...allWords].sort(() => Math.random()-0.5).slice(0,6);
-  const wordList = sample.map(w => `${w.korean}(${w.es})`).join(', ');
-
-  dynamicCounter++;
-  const useDynamic = dynamicCounter % 2 === 0; // alternate: 1 static, 1 dynamic
-
-  // Try pre-fetched dynamic first (if it's a dynamic turn and we have one)
-  if (useDynamic && nextExercise) {
-    const ex = nextExercise;
-    nextExercise = null;
-    const label = EX_TYPES[ex.type] || ex.type;
-    renderExercise(ex, label);
-    // prefetch next in background
-    setTimeout(() => prefetchDynamic(type, wordList), 100);
+  // If we have a pre-fetched exercise ready → instant
+  if (exerciseQueue.length > 0) {
+    const ex = exerciseQueue.shift();
+    renderExercise(ex, EX_TYPES[ex.type] || ex.type);
+    // immediately start fetching the next one in background
+    setTimeout(() => prefetchNext(type, null), 100);
     return;
   }
 
-  // Try static bank
-  const bankEx = getFromBank(type);
-  if (bankEx) {
-    renderExercise(bankEx, EX_TYPES[bankEx.type] || bankEx.type);
-    // prefetch dynamic in background for next dynamic turn
-    if (!nextExercise && !prefetching) {
-      setTimeout(() => prefetchDynamic(type, wordList), 500);
-    }
-    return;
-  }
-
-  // Fallback: generate dynamically (show spinner)
+  // Queue empty → show spinner and fetch now
   card.innerHTML = `<div class="loading-exercise"><div class="spinner"></div>Generando ejercicio...</div>`;
-
-  // Dynamic generation fallback
-  const prompts = buildPrompts(wordList);
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 700,
-        messages: [{ role: 'user', content: prompts[type] }]
-      })
-    });
-    const data = await response.json();
-    const raw = data.content.find(b => b.type === 'text')?.text || '';
-    const clean = raw.replace(/```json|```/g, '').trim();
-    const s = clean.indexOf('{'); const e2 = clean.lastIndexOf('}') + 1;
-    const ex = JSON.parse(clean.slice(s, e2));
-    ex.type = type;
-    renderExercise(ex, typeLabel);
-    // prefetch next
-    setTimeout(() => prefetchDynamic(type, wordList), 200);
+    const ex = await fetchOne(type);
+    renderExercise(ex, EX_TYPES[ex.type] || ex.type);
+    // refill queue
+    setTimeout(() => prefetchNext(type, null), 200);
   } catch(e) {
     card.innerHTML = `<div style="color:var(--wrong);padding:1rem;">Error generando el ejercicio. Intenta de nuevo.<br><small>${e.message}</small></div>`;
   }
